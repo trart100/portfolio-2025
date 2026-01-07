@@ -1,0 +1,756 @@
+:root{
+  --page-margin: 34px;
+  --accent-stroke: #eccfab;
+  /* cursor sizing: large matches menu button height; medium = 90%, small = 80% */
+  --cursor-large: 92px;
+  /* menu/button font sizing (cursor plus should match this) */
+  --menu-btn-font-size: 25pt;
+  /* menu button physical height (used to align mobile trigger precisely) */
+  --menu-btn-height: 92px;
+  /* small vertical nudge for mobile menu positioning (positive = lower) */
+  --mobile-menu-vertical-adjust: 18px;
+}
+
+.preloader-root{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  background:#020202;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  transition:opacity 220ms ease, visibility 220ms ease;
+}
+.preloader-root.preloader--done{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.preloader-content{
+  position:relative;
+  width:calc(var(--cursor-large) * 1.2);
+  height:calc(var(--cursor-large) * 1.2);
+  display:grid;
+  place-items:center;
+}
+.preloader-circle{
+  position:absolute;
+  inset:0;
+  margin:auto;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.25);
+  animation:preloader-pulse 1600ms ease-in-out infinite;
+}
+.preloader-circle--large{width:var(--cursor-large);height:var(--cursor-large);animation-delay:0ms;}
+.preloader-circle--medium{width:calc(var(--cursor-large) * 0.9);height:calc(var(--cursor-large) * 0.9);animation-delay:200ms;}
+.preloader-circle--small{width:calc(var(--cursor-large) * 0.8);height:calc(var(--cursor-large) * 0.8);animation-delay:400ms;}
+.preloader-text{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight:300;
+  font-size:25pt;
+  color:#6e6e6e;
+  letter-spacing:1px;
+  text-shadow:0 0 12px rgba(0,0,0,0.45);
+}
+.preloader-active body{
+  overflow-x:hidden;
+  overflow-y:scroll;
+}
+
+@keyframes preloader-pulse{
+  0%{transform:scale(1);opacity:1;}
+  50%{transform:scale(0.85);opacity:0.35;}
+  100%{transform:scale(1);opacity:1;}
+}
+/* Sub-title should never be wider than the content area (viewport minus
+  page margins). We constrain it to the same content width so it aligns
+  visually with the title while preserving internal behavior (centering). */
+.sub-title{ max-width: calc(100vw - (var(--page-margin) * 2)); margin: 0 auto; text-align: center; }
+
+html,body,#__next{ height:100%; }
+body{
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Remove default link styling */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Dot grid removed — background and variables cleaned */
+
+.page-root{ min-height:100%; width:100%; overflow-x:hidden; }
+.page-content{ width:100%; position:relative; z-index:1; }
+
+.container{
+  max-width:1920px;
+  padding-left:var(--page-margin);
+  padding-right:var(--page-margin);
+  margin:0 auto;
+}
+
+.full-screen{ height:100vh; display:flex; align-items:center; justify-content:center; }
+
+/* Center home container contents (title centered, animated info below) */
+.section.home .container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Remove absolute positioning - use normal flow */
+
+/* Section spacing */
+.section.contact {
+  margin-top: 400px;  /* large gap before contact section */
+}
+
+/* Typography classes (as requested) */
+.title{
+  font-family: 'Manrope', sans-serif;
+  font-weight:200; /* extra light */
+  /* Responsive sizing: use the viewport width minus the page margins so
+    scaling doesn't start until the available content width (respecting
+    the left/right margins) actually shrinks. The middle expression
+    uses a scale factor to convert available width into a font-size.
+    Keep the same min and max bounds. */
+  /* font-size driven from JS measurement so the title fills the available
+    content width (viewport minus page margins). We keep a fallback and
+    bounds so non-JS environments remain usable. */
+  font-size: var(--title-font-size, 150px);
+  font: size 100%; 
+  transition: font-size 180ms ease;
+  line-height:0.9;
+  color:#ffffff;
+  transform: translateY(-24px); /* Move title 10px up */
+  /* make the title element occupy the full content width (viewport minus
+     left/right page margins). This guarantees there are exactly
+     --page-margin pixels of space on each side. */
+  display: block;
+  width: calc(100vw - (var(--page-margin) * 2));
+  box-sizing: border-box;
+  margin: 24px var(--page-margin) 0 var(--page-margin);
+  text-align: center;
+  white-space: nowrap; /* never allow title to wrap to multiple lines */
+  overflow: hidden;
+  
+}
+
+.mini-text{
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight:300;
+  font: size 25px;
+  color:#6e6e6e;
+}
+
+.main-text{
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight:100;
+  font-size:40px;
+  line-height: 78px;
+  color:#9f9e9f;
+}
+
+.video-visual-wrap{ display:flex; align-items:center; justify-content:center; width:100%;
+  /* keep no intrinsic height so page content can flow over the fixed visual */
+  height: 0;
+}
+
+/* Fixed, centered video visual that stays visible; content scrolls over it */
+.video-visual{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  /* 80% of the larger viewport dimension, but never exceed viewport width/height */
+  width: min(65vmax, 100vw);
+  aspect-ratio: 1 / 1;
+  max-height: 100vh;
+  max-width: 100vw;
+  border-radius: 8px;
+  pointer-events: none; /* let clicks pass through */
+  z-index: -1; /* keep behind page content */
+  display:block;
+}
+.video-visual iframe,
+.video-visual video{
+  width:100%;
+  height:100%;
+  border-radius:8px;
+  display:block;
+  pointer-events:none;
+  object-fit:cover;
+}
+/* Transparent overlay to handle mouse events */
+.video-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+}
+
+/* Manifesto */
+.manifesto{ padding:80px 0 240px 0; }
+.manifesto-inner{ display:flex; flex-direction:column; gap:96px; }
+.manifesto-p{
+  margin:0;
+  /* translucent panel so the video visual behind is visible and blurred */
+  background: rgba(0,0,0,.9);
+  border: 0px solid rgba(255,255,255,0.06);
+  border-radius: 50px;
+  padding: 22px 39px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  will-change: transform, backdrop-filter;
+}
+
+/* Animated paragraph word spans */
+.ap-word{ display:inline-block; white-space:pre; will-change: transform, opacity; }
+.manifesto-highlight{ color:#ffffff; }
+
+/* Contact */
+.contact{ 
+  min-height: 100vh;  /* make section full height */
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+  padding: 0;  /* remove padding since we're using full height */ 
+}
+
+/* Add margin to ensure proper spacing and centering */
+.section.contact {
+  margin-top: 400px;
+  margin-bottom: 400px;  /* match top margin for symmetry */
+}
+.contact-inner{ display:flex; align-items:center; justify-content:center; }
+.contact-block{ display:flex; align-items:center; justify-content:center; }
+.contact-items{ display:flex; flex-direction:column; gap:150px; align-items:center; }
+.contact-items .mini-text{ font-size:25pt; }
+.contact-items .mini-text{
+  position:relative;
+}
+.contact-items .mini-text::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-6px;
+  height:2px;
+  transform:scaleX(0);
+  transform-origin:center;
+  background:linear-gradient(90deg, rgba(236,199,171,0.7), rgba(236,199,171,0.3));
+  transition:transform 220ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.contact-items .mini-text:hover::after,
+.contact-items .mini-text:focus-visible::after{
+  transform:scaleX(1);
+}
+/* Draggable UX improvements */
+.contact-items .mini-text{ font-size:25pt; }
+
+/* Footer */
+.footer{ padding:40px 0; }
+
+/* Showreel overlay */
+.showreel-overlay{
+  position:fixed;
+  inset:0;
+  background:#000; /* Solid black instead of transparent overlay */
+  z-index:1200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* Ensure no flash during initial render */
+  opacity:0;
+  visibility:hidden;
+}
+
+.overlay-contents{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000; /* Ensure background is black */
+}
+
+.overlay-video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000; /* Keep video background black */
+  /* Prevent any default browser video styling */
+  border:none;
+  outline:none;
+}
+
+.overlay-video-wrap{
+  position:relative;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000; /* Triple ensure black background */
+}
+
+.overlay-close{
+  position:absolute;
+  top:34px;
+  right:34px;
+  z-index:1300;
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(255,255,255,0.1);
+  color:#9f9e9f;
+  /* match hamburger/menu trigger size so the close button visually aligns */
+  width: var(--cursor-large);
+  height: var(--cursor-large);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  cursor:pointer;
+  backdrop-filter:blur(8px);
+}
+
+.overlay-close:hover{
+  background:rgba(0,0,0,0.6);
+}
+
+/* Cursor */
+.cursor{
+  position:fixed;
+  top:0; left:0;
+  pointer-events:none;
+  /* raise above showreel overlay (z-index:1200) and overlay-close (z-index:1300) */
+  z-index:1500;
+  /* scale vars for sequencing: JS will toggle these during the hover sequence */
+  --cursor-small-scale: 1;
+  --cursor-med-scale: 1;
+  --cursor-large-scale: 1;
+  --cursor-plus-scale: 1;
+  --cursor-dot-scale: 0;
+}
+
+/* Cursor rings */
+.cursor-ring{
+  position:fixed;
+  border-radius:50%;
+  border-style: solid;
+  border-width: 1px; /* keep stroke visually constant */
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.08);
+  mix-blend-mode:screen;
+  pointer-events:none;
+  /* baseline centering transform; JS rAF loop drives left/top/width/height.
+     Scale is controlled per-ring via CSS vars so JS can sequence collapse
+     without interfering with the loop (which only writes left/top). */
+  transform-origin: center center;
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1);
+  transform-origin: center center;
+  /* include transform in will-change so scale transitions are GPU-accelerated and smooth */
+  will-change: transform, left, top, width, height;
+}
+.cursor-ring--large{ width:var(--cursor-large); height:var(--cursor-large); transform: translate(-50%,-50%) scale(var(--cursor-large-scale,1)); }
+.cursor-ring--med{ width:calc(var(--cursor-large) * 0.9); height:calc(var(--cursor-large) * 0.9); transform: translate(-50%,-50%) scale(var(--cursor-med-scale,1)); }
+.cursor-ring--small{ width:calc(var(--cursor-large) * 0.8); height:calc(var(--cursor-large) * 0.8); transform: translate(-50%,-50%) scale(var(--cursor-small-scale,1)); }
+.cursor-plus{
+  position:fixed;
+  pointer-events:none;
+  color:#9f9e9f;
+  font-weight:300;
+  line-height:1;
+  user-select:none;
+  font-size: var(--menu-btn-font-size);
+  transform: translate(-50%,-50%) scale(var(--cursor-plus-scale,1));
+  transition: transform 160ms cubic-bezier(.2,.9,.2,1), opacity 120ms linear;
+}
+
+/* when dot active, visually hide the plus to avoid overlap */
+.cursor--dot-active .cursor-plus {
+  transform: translate(-50%,-50%) scale(0) !important;
+  opacity: 0; 
+}
+
+/* Menu bottom center */
+.menu-bottom{ position:fixed; left:50%; transform:translateX(-50%); bottom:40px; z-index:900; }
+.menu-group{ display:flex; gap:68px; align-items:center; }
+/* Mobile / responsive menu wrap */
+.mobile-menu-wrap{ display:none; position:fixed; left:50%; transform:translateX(-50%); /* keep same bottom as desktop menu */
+  bottom: 0px; z-index:1100; align-items:center; justify-content:center; }
+
+.menu-trigger{
+  width:var(--cursor-large); height:var(--cursor-large); border-radius:50%; position:relative; display:block; cursor:pointer;
+  background:rgba(0,0,0,0.12); border:1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: transform 200ms ease, background-color 180ms ease;
+}
+.menu-trigger .hamburger-line{
+  width:22px; height:2px;
+  background:rgba(255,255,255,0.9);
+  position:absolute;
+  left:50%; top:50%;
+  /* center by default then offset via translateY for closed state */
+  transform: translate(-50%,-50%);
+  transition: transform 220ms ease, opacity 180ms ease, background-color 180ms ease;
+  transform-origin:center center;
+}
+/* closed state: offset the top/bottom lines visually using translateY so they remain centered for rotations */
+.menu-trigger .hamburger-line:nth-child(1){ transform: translate(-50%,-50%) translateY(-10px); }
+.menu-trigger .hamburger-line:nth-child(3){ transform: translate(-50%,-50%) translateY(10px); }
+.menu-trigger.is-open{ transform: rotate(90deg); }
+.menu-trigger.is-open .hamburger-line{ background:rgba(255,255,255,0.95); }
+/* when open, move the top/bottom lines to the true center (no translateY) and rotate them to form a neat cross */
+.menu-trigger.is-open .hamburger-line:nth-child(1){ transform: translate(-50%,-50%) rotate(45deg); }
+.menu-trigger.is-open .hamburger-line:nth-child(2){ transform: translate(-50%,-50%) scaleX(0); opacity:0; }
+.menu-trigger.is-open .hamburger-line:nth-child(3){ transform: translate(-50%,-50%) rotate(-45deg); }
+
+/* Mobile stacked menu (hidden when closed) */
+.mobile-menu{ position:absolute; left:50%; transform:translateX(-50%);
+  /* stacked items: place them directly above the trigger inside the wrapper so
+     their distance from the trigger is constant regardless of wrapper bottom. */
+  bottom: calc(var(--cursor-large) + 12px);
+  display:flex; flex-direction:column; gap:14px; align-items:center; pointer-events:none; }
+.mobile-menu .mobile-item{
+  /* ensure the items are real boxes (avoid accidental inline/hidden overrides) */
+  display:block;
+  opacity:0;
+  visibility:hidden;
+  transform: translateY(18px) scale(0.98);
+  transition: transform 300ms cubic-bezier(.2,.9,.2,1), opacity 260ms ease, visibility 0ms linear 300ms;
+}
+.mobile-menu.open{ pointer-events:auto; }
+.mobile-menu.open .mobile-item{
+  visibility:visible; /* make visible immediately when open */
+  opacity:1;
+  transform: translateY(0) scale(1);
+}
+.mobile-menu.open .mobile-item:nth-child(1){ transition-delay: 0ms; }
+.mobile-menu.open .mobile-item:nth-child(2){ transition-delay: 80ms; }
+.mobile-menu.open .mobile-item:nth-child(3){ transition-delay: 160ms; }
+
+/* On larger screens, hide mobile menu UI */
+@media (min-width: 900px){
+  .mobile-menu-wrap{ display:none !important; }
+}
+
+/* On small screens, hide desktop menu-group and show mobile wrap */
+@media (max-width: 899px){
+  .menu-group{ display:none !important; }
+  .mobile-menu-wrap{ display:flex; }
+}
+.menu-btn{
+  width:278px; height:92px; border-radius:46px; background:rgba(0,0,0,0.12);
+  /* keep border properties as separate subproperties so width/color can animate smoothly */
+  border-style: solid;
+  border-width: 1px;
+  border-color: rgba(255,255,255,0.1);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: background-color 0.18s, transform 0.18s, border-color 0.18s;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  position: relative; /* allow absolute hover-ring overlays inside */
+  overflow: visible;
+}
+.menu-btn{
+  /* Prefer animating the variable font 'wght' axis when available */
+  font-variation-settings: 'wght' 300;
+  /* combine transitions so transform/scale still animates smoothly. Use slower border transitions for hover effect. */
+  transition: background-color 180ms ease, transform 220ms cubic-bezier(.2,.9,.2,1),
+              border-color 420ms ease-in-out, border-width 420ms ease-in-out,
+              font-variation-settings 180ms linear, font-weight 180ms linear;
+  transform-origin: center center;
+  will-change: transform, font-variation-settings;
+}
+.menu-btn:hover{
+  font-variation-settings: 'wght' 650;
+  font-weight:700; /* fallback for non-variable fonts */
+}
+.menu-btn.mini-text{ font-size:var(--menu-btn-font-size); color:#6e6e6e; }
+
+/* Hover state for non-selected buttons: scale up and dark translucent bg like the overlay close
+   Update: make hover border use the accent stroke at 50% opacity (higher specificity than the generic rule). */
+.menu-btn:not(.selected):hover{
+  background: rgba(0,0,0,0.4);
+  transform: scale(1.05);
+  /* hovered border should be 1px semi-transparent accent — set subproperties so they animate */
+  border-width: 1px;
+  border-color: rgba(236,199,171,0.5);
+}
+
+/* When a selected button is hovered, show the hovered appearance (1px semi-transparent)
+   Selected (not hovered) remains 2px solid full accent via .menu-btn.selected */
+.menu-btn.selected:hover{
+  /* Keep the selected appearance when hovered: do not reduce stroke width or color */
+  border-width: 2px;
+  border-color: var(--accent-stroke);
+}
+
+/* Hover border: all buttons should use the accent stroke at 50% opacity while hovered.
+   When mouse leaves, existing rules (.menu-btn.selected or the default 1px grey) will resume. */
+button:hover,
+.menu-btn:hover{
+  border-width: 1px;
+  border-color: rgba(236,199,171,0.5); /* hovered border: 1px semi-transparent */
+}
+
+/* Ensure buttons animate transform/background/border smoothly. Keep transform fast and the border slower. */
+button, input[type="button"], .menu-btn{
+  box-sizing: border-box; /* keep size stable when border-width animates */
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1),
+              background-color 180ms ease,
+              border-color 420ms ease-in-out,
+              border-width 420ms ease-in-out;
+}
+
+/* Selected state: keep 2px accent stroke as before */
+.menu-btn.selected{
+  border-width: 2px;
+  border-color: var(--accent-stroke);
+}
+
+.btn-hover-rings{
+  position:absolute;
+  left:50%; top:50%;
+  /* Use button height (with extra padding) and force a 1:1 aspect ratio so the
+    overlay is always square — this guarantees circular rings even when the
+    host button is wide (avoids 'egg' shapes). */
+  height: calc(100% + 22px);
+  aspect-ratio: 1 / 1;
+  width: auto; /* computed from aspect-ratio */
+  transform: translate(-50%,-50%);
+  /* baseline centering transform; JS/ResizeObserver drives left/top/width/height.
+    scale is controlled via CSS transforms on the ring elements. */
+  transform-origin: center center;
+  transition: transform 180ms cubic-bezier(.2,.9,.2,1);
+  /* Do not let the wrapper capture pointer events — rings should be
+     purely visual and never change the pointer/hover target area. */
+  pointer-events: none;
+}
+.btn-hover-ring{
+  position:absolute;
+  left:50%; top:50%;
+  width:100%; height:100%;
+  border-radius:50%;
+  border:1px solid rgba(236,199,171,0.28); /* soft accent */
+  background: transparent;
+  transform: translate(-50%,-50%) scale(0.6);
+  opacity: 0;
+  pointer-events:none;
+}
+/* Ensure the menu button itself is above the ring overlay */
+.menu-btn{ position: relative; z-index: 2; }
+
+/* When a button is hovered we add --is-behind to put it under its siblings
+  while keeping it above the video visual. We persist this during roll-out so the
+  visual overlap remains consistent. */
+.menu-btn.is-behind{ z-index: 0; }
+
+/* Active/leaving states applied to the shared layer when a button is hovered */
+.hover-rings-layer.active .btn-hover-ring.ring-1{ transform: translate(-50%,-50%) scale(1.02); opacity: 0.75; }
+.hover-rings-layer.active .btn-hover-ring.ring-2{ transform: translate(-50%,-50%) scale(1.14); opacity: 0.5; }
+.hover-rings-layer.active .btn-hover-ring.ring-3{ transform: translate(-50%,-50%) scale(1.26); opacity: 0.25; }
+.hover-rings-layer.leaving .btn-hover-ring.ring-1{ transition-delay: 80ms; }
+.hover-rings-layer.leaving .btn-hover-ring.ring-2{ transition-delay: 40ms; }
+.hover-rings-layer.leaving .btn-hover-ring.ring-3{ transition-delay: 0ms; }
+.btn-hover-ring.ring-1{ transition: transform 360ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease; }
+
+/* small dot that replaces the plus during the interaction */
+.cursor-dot{
+  position:fixed;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background: #9f9e9f;
+  pointer-events:none;
+  transform: translate(-50%,-50%) scale(var(--cursor-dot-scale,0));
+  opacity: 0;
+  transition: transform 180ms cubic-bezier(.2,.9,.2,1), opacity 120ms linear;
+}
+
+/* when active, dot pulses opacity between 50% and 100% continuously */
+.cursor--dot-active .cursor-dot{
+  opacity: 1;
+  animation: cursor-dot-pulse 0.5s linear infinite alternate;
+}
+
+@keyframes cursor-dot-pulse{
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+.btn-hover-ring.ring-2{ transition: transform 380ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease; transition-delay: 40ms; }
+.btn-hover-ring.ring-3{ transition: transform 420ms cubic-bezier(.2,.9,.2,1), opacity 260ms ease; transition-delay: 80ms; }
+.menu-btn:hover .btn-hover-ring.ring-1,
+.menu-btn.is-hovered .btn-hover-ring.ring-1{ transform: translate(-50%,-50%) scale(1.02); opacity: 0.75; }
+.menu-btn:hover .btn-hover-ring.ring-2,
+.menu-btn.is-hovered .btn-hover-ring.ring-2{ transform: translate(-50%,-50%) scale(1.14); opacity: 0.5; }
+.menu-btn:hover .btn-hover-ring.ring-3,
+.menu-btn.is-hovered .btn-hover-ring.ring-3{ transform: translate(-50%,-50%) scale(1.26); opacity: 0.25; }
+
+/* When a button is explicitly leaving (we add/remove this class from JS),
+   reverse the transition delays so the rings collapse in a staggered order
+   on roll-out. The delays are the inverse of the enter delays above. */
+.menu-btn.is-leaving .btn-hover-ring.ring-1{ transition-delay: 80ms; }
+.menu-btn.is-leaving .btn-hover-ring.ring-2{ transition-delay: 40ms; }
+.menu-btn.is-leaving .btn-hover-ring.ring-3{ transition-delay: 0ms; }
+
+/* Ensure mobile stacked items inherit the same overlay style */
+.mobile-menu .menu-btn .btn-hover-rings{ height: calc(100% + 12px); aspect-ratio: 1 / 1; width: auto; }
+
+/* Responsive adjustments */
+@media (max-width: 5000px){
+  .title{ font: size 100%; }
+
+}
+
+
+@media (max-width: 1200px){
+  .title{ font: size 100%; }
+  .video-visual{ width: min(100vmax, 100vw); }
+}
+
+@media (max-width: 768px) {
+  .animated-information {
+    font-size: 18pt !important;   
+  }
+   .title{ font: size 100%; transform: translateY(12px);}
+  .video-visual{ height: 150em }
+}
+
+
+
+
+
+/* FPS meter */
+.fps-meter{ position:fixed; left:12px; bottom:12px; background:rgba(0,0,0,0.6); color:#fff; padding:8px 10px; border-radius:8px; font-family:monospace; font-size:12px; z-index:2000; pointer-events:none; opacity:0.9 }
+.fps-meter .fps-value{ font-weight:700 }
+.fps-meter .fps-ms{ font-size:11px; opacity:0.8 }
+
+/* Animated Information responsive spacing */
+.animated-information {
+  margin-bottom: 8px; /* Very small margin for tight visual grouping */
+  height: 4.2em !important; /* Fixed height to prevent jumping */
+}
+
+
+
+
+
+/* Data Protection / GDPR Compliance */
+.data-protection{ 
+  position:fixed; 
+  right:12px; 
+  bottom:12px; 
+  background:rgba(0,0,0,0.6); 
+  color:#fff; 
+  border-radius:8px; 
+  font-family:monospace; 
+  font-size:12px; 
+  z-index:2000; 
+  opacity:0.9;
+  max-width:280px;
+  transition:all 300ms ease;
+}
+
+.data-protection-header{
+  padding:8px 10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  user-select:none;
+}
+
+.data-protection-header:hover{
+  background:rgba(255,255,255,0.1);
+  border-radius:8px;
+}
+
+.data-protection-label{
+  font-weight:700;
+}
+
+.data-protection-toggle{
+  font-weight:700;
+  font-size:14px;
+  transition:transform 200ms ease;
+}
+
+.data-protection-toggle--open{
+  transform:rotate(0deg);
+}
+
+.data-protection-content{
+  padding:0 10px 10px 10px;
+  border-top:1px solid rgba(255,255,255,0.1);
+  animation:expandContent 300ms ease;
+}
+
+.data-protection-text{
+  font-size:11px;
+  line-height:1.4;
+  opacity:0.9;
+  margin:8px 0 12px 0;
+}
+
+.data-protection-actions{
+  display:flex;
+  gap:8px;
+}
+
+.data-protection-btn{
+  flex:1;
+  padding:6px 8px;
+  border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.1);
+  color:#fff;
+  border-radius:4px;
+  font-size:11px;
+  font-family:monospace;
+  cursor:pointer;
+  transition:all 200ms ease;
+}
+
+.data-protection-btn:hover{
+  background:rgba(255,255,255,0.2);
+  border-color:rgba(255,255,255,0.4);
+}
+
+.data-protection-btn--yes:hover{
+  background:rgba(34,197,94,0.3);
+  border-color:rgba(34,197,94,0.6);
+}
+
+.data-protection-btn--no:hover{
+  background:rgba(239,68,68,0.3);
+  border-color:rgba(239,68,68,0.6);
+}
+
+@keyframes expandContent {
+  from {
+    opacity:0;
+    transform:translateY(-10px);
+  }
+  to {
+    opacity:1;
+    transform:translateY(0);
+  }
+}
