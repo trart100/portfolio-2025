@@ -137,7 +137,7 @@ a {
   transition: font-size 180ms ease;
   line-height:0.9;
   color:#ffffff;
-  transform: translateY(-24px); /* Move title 10px up */
+  /* transform: translateY(-24px); */ /* DISABLED - testing vertical scroll jump */
   /* make the title element occupy the full content width (viewport minus
      left/right page margins). This guarantees there are exactly
      --page-margin pixels of space on each side. */
@@ -656,7 +656,7 @@ button, input[type="button"], .menu-btn{
   .animated-information {
     font-size: 18pt !important;   
   }
-   .title{ font: size 100%; transform: translateY(12px);}
+   .title{ font: size 100%; /* transform: translateY(12px); */ } /* DISABLED - testing vertical jump */
   .video-visual{ height: 150em }
   .main-text{ font-size: 28px; line-height: 56px; } 
   
@@ -672,7 +672,7 @@ button, input[type="button"], .menu-btn{
   .animated-information {
     font-size: 16pt !important;   
   }
-   .title{ font-size: 35pt; transform: translateY(12px);}
+   .title{ font-size: 35pt; /* transform: translateY(12px); */ } /* DISABLED - testing vertical jump */
   .video-visual{ height: 125em }
   .main-text{ font-size: 20px; line-height: 40px; } 
 

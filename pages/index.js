@@ -179,14 +179,23 @@ export default function Home() {
       return { left: Math.round(r.left), right: Math.round(window.innerWidth - r.right) }
     }
 
+    let lastWidth = window.innerWidth
+
     const onResize = () => {
       lastScroll.current = window.scrollY
       clearTimeout(resizeTimeout.current)
       resizeTimeout.current = setTimeout(() => {
         window.scrollTo({ top: lastScroll.current })
       }, 120)
-      if (rafId) cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(measureTitle)
+    }
+
+    const onTitleResize = () => {
+      const currentWidth = window.innerWidth
+      if (currentWidth !== lastWidth) {
+        lastWidth = currentWidth
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(measureTitle)
+      }
     }
 
     const onOpen = () => setShowOverlay(true)
@@ -200,6 +209,7 @@ export default function Home() {
     }
 
   window.addEventListener('resize', onResize)
+  window.addEventListener('resize', onTitleResize)  // Re-enabled horizontal scaling
     window.addEventListener('openShowreel', onOpen)
     window.addEventListener('closeShowreel', onClose)
 
@@ -207,14 +217,10 @@ export default function Home() {
   measureTitle()
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measureTitle())
   setTimeout(() => measureTitle(), 15)
-  
-  // Force fake resize to trigger measureTitle through onResize handler
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'))
-  }, 25)
 
     return () => {
       window.removeEventListener('resize', onResize)
+      window.removeEventListener('resize', onTitleResize)  // Re-enabled
       window.removeEventListener('openShowreel', onOpen)
       window.removeEventListener('closeShowreel', onClose)
   // no ResizeObserver to cleanup here (kept for backwards-compatibility)
