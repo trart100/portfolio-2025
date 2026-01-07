@@ -356,6 +356,14 @@ a {
   display: none !important;
 }
 
+/* Hide cursor elements when showreel overlay is active */
+.showreel-overlay[style*="visibility: visible"] ~ .cursor,
+.showreel-overlay[style*="visibility: visible"] ~ .cursor-ring,
+.showreel-overlay[style*="visibility: visible"] ~ .cursor-plus,
+.showreel-overlay[style*="visibility: visible"] ~ .cursor-dot {
+  display: none !important;
+}
+
 .overlay-contents{
   position:relative;
   width:100vw;
