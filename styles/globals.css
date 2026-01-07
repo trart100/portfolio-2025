@@ -631,9 +631,21 @@ button, input[type="button"], .menu-btn{
   }
    .title{ font: size 100%; transform: translateY(12px);}
   .video-visual{ height: 150em }
-  .main-text{ font-size: 24px; line-height: 48px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
+  .main-text{ font-size: 24px; line-height: 40px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
 
 }
+
+@media (max-width: 600px) {
+  .animated-information {
+    font-size: 16pt !important;   
+  }
+   .title{ font-size: 35pt; transform: translateY(12px);}
+  .video-visual{ height: 125em }
+  .main-text{ font-size: 20px; line-height: 30px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
+
+}
+
+
 
 
 
