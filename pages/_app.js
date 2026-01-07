@@ -13,7 +13,7 @@ export default function App({ Component, pageProps }) {
       </Head>
       <Preloader />
       <Component {...pageProps} />
-      <FpsMeter />
+      <FpsMeter visible={true} />
       <DataProtection />
     </>
   )
