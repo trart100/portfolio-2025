@@ -231,6 +231,46 @@ a {
     visibility: visible !important;
     will-change: auto;
   }
+  
+  /* Center close button on smaller screens */
+  .overlay-close {
+    top: auto !important;
+    bottom: 34px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  /* Video zoom controls for mobile */
+  .video-zoom-controls {
+    position: absolute !important;
+    bottom: calc(34px + var(--cursor-large) + 20px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    gap: 20px !important;
+    z-index: 1300 !important;
+  }
+  
+  .video-zoom-btn {
+    width: var(--cursor-large) !important;
+    height: var(--cursor-large) !important;
+    border-radius: 50% !important;
+    background: rgba(0,0,0,0.4) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: #9f9e9f !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    backdrop-filter: blur(8px) !important;
+    transition: background-color 180ms ease !important;
+  }
+  
+  .video-zoom-btn:hover {
+    background: rgba(0,0,0,0.6) !important;
+  }
 }
 
 /* Contact */

@@ -1,8 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function ShowreelOverlay({ onClose }) {
   const ref = useRef(null)
   const videoRef = useRef(null)
+  const [videoScale, setVideoScale] = useState(100)
+
+  useEffect(() => {
+    // Reset scale on window resize
+    const handleResize = () => {
+      setVideoScale(100)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     let ctx
@@ -80,19 +91,33 @@ export default function ShowreelOverlay({ onClose }) {
     })
   }
 
+  const handleZoomIn = () => {
+    setVideoScale(prev => Math.min(200, prev + 50))
+  }
+
+  const handleZoomOut = () => {
+    setVideoScale(prev => Math.max(100, prev - 50))
+  }
+
   return (
     <div ref={ref} className="showreel-overlay" role="dialog" aria-label="Showreel overlay">
       <div className="overlay-contents">
         <div className="overlay-video-wrap">
           <iframe 
+            ref={videoRef}
             src="https://player.vimeo.com/video/1152240405?h=c373febd16&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1" 
             className="overlay-video" 
             frameBorder="0" 
             allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
             referrerPolicy="strict-origin-when-cross-origin"
             title="Showreel 2025"
+            style={{ transform: `scale(${videoScale / 100})`, transformOrigin: 'center center' }}
           />
           <button className="overlay-close mini-text" onClick={handleClose} aria-label="Close showreel">×</button>
+          <div className="video-zoom-controls">
+            <button className="video-zoom-btn" onClick={handleZoomOut} aria-label="Zoom out">−</button>
+            <button className="video-zoom-btn" onClick={handleZoomIn} aria-label="Zoom in">+</button>
+          </div>
         </div>
       </div>
     </div>
