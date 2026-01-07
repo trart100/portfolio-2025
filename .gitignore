@@ -37,7 +37,8 @@ yarn-error.log*
 Thumbs.db
 
 # Large video files (use external hosting like Vimeo)
-*.mp4
+# Allow smaller videos under 100MB
+Showreel_1920x1080_2025_1.mp4
+# Exclude other large video formats
 *.mov
 *.avi
-/public/assets/*.mp4
