@@ -204,7 +204,7 @@ export default function Home() {
   // Force fake resize to trigger measureTitle through onResize handler
   setTimeout(() => {
     window.dispatchEvent(new Event('resize'))
-  }, 50)
+  }, 25)
 
     return () => {
       window.removeEventListener('resize', onResize)

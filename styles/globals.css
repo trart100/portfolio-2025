@@ -619,19 +619,25 @@ button, input[type="button"], .menu-btn{
 
 
 
-@media (max-width: 1200px){
+@media (max-width: 1300px){
   .title{ font: size 100%; }
   .video-visual{ width: min(100vmax, 100vw); }
-  .main-text{ font-size: 32px; } /* 20% smaller: 40px * 0.8 */
+  .main-text{ font-size: 36px; line-height: 66px; } /* 20% smaller: 40px * 0.8 */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
   .animated-information {
     font-size: 18pt !important;   
   }
    .title{ font: size 100%; transform: translateY(12px);}
   .video-visual{ height: 150em }
-  .main-text{ font-size: 24px; line-height: 40px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
+  .main-text{ font-size: 28px; line-height: 56px; } 
+  
+  /* Reduce section spacing by 50% */
+  .manifesto{ padding: 40px 0 0 0; } 
+  .manifesto-inner{ gap: 48px; } 
+  .section.contact { margin-top: 0px; margin-bottom: 0px; } 
+  .contact-items{ gap: 75px; } 
 
 }
 
@@ -641,7 +647,7 @@ button, input[type="button"], .menu-btn{
   }
    .title{ font-size: 35pt; transform: translateY(12px);}
   .video-visual{ height: 125em }
-  .main-text{ font-size: 20px; line-height: 30px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
+  .main-text{ font-size: 20px; line-height: 33px; } 
 
 }
 
