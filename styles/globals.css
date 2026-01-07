@@ -616,15 +616,13 @@ button, input[type="button"], .menu-btn{
 .mobile-menu .menu-btn .btn-hover-rings{ height: calc(100% + 12px); aspect-ratio: 1 / 1; width: auto; }
 
 /* Responsive adjustments */
-@media (max-width: 5000px){
-  .title{ font: size 100%; }
 
-}
 
 
 @media (max-width: 1200px){
   .title{ font: size 100%; }
   .video-visual{ width: min(100vmax, 100vw); }
+  .main-text{ font-size: 32px; } /* 20% smaller: 40px * 0.8 */
 }
 
 @media (max-width: 768px) {
@@ -633,6 +631,8 @@ button, input[type="button"], .menu-btn{
   }
    .title{ font: size 100%; transform: translateY(12px);}
   .video-visual{ height: 150em }
+  .main-text{ font-size: 24px; line-height: 48px; } /* 40% smaller: 40px * 0.6, adjusted line-height */
+
 }
 
 
