@@ -223,6 +223,16 @@ a {
 .ap-word{ display:inline-block; white-space:pre; will-change: transform, opacity; }
 .manifesto-highlight{ color:#ffffff; }
 
+/* Disable animated paragraph animations on small screens */
+@media (max-width: 800px) {
+  .ap-word {
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    will-change: auto;
+  }
+}
+
 /* Contact */
 .contact{ 
   min-height: 100vh;  /* make section full height */
@@ -260,11 +270,18 @@ a {
 .contact-items .mini-text:focus-visible::after{
   transform:scaleX(1);
 }
+
+/* Copyright text styling - 50% opacity and no hover effects */
+.contact-items .mini-text:not(a) {
+  opacity: 0.5;
+  cursor: default;
+}
+.contact-items .mini-text:not(a)::after {
+  display: none;
+}
+
 /* Draggable UX improvements */
 .contact-items .mini-text{ font-size:25pt; }
-
-/* Footer */
-.footer{ padding:40px 0; }
 
 /* Showreel overlay */
 .showreel-overlay{
@@ -347,6 +364,16 @@ a {
   --cursor-large-scale: 1;
   --cursor-plus-scale: 1;
   --cursor-dot-scale: 0;
+}
+
+/* Hide custom cursor on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .cursor,
+  .cursor-ring,
+  .cursor-plus,
+  .cursor-dot {
+    display: none !important;
+  }
 }
 
 /* Cursor rings */
@@ -647,7 +674,7 @@ button, input[type="button"], .menu-btn{
   }
    .title{ font-size: 35pt; transform: translateY(12px);}
   .video-visual{ height: 125em }
-  .main-text{ font-size: 20px; line-height: 33px; } 
+  .main-text{ font-size: 20px; line-height: 40px; } 
 
 }
 

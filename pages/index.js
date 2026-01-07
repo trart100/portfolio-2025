@@ -190,7 +190,14 @@ export default function Home() {
     }
 
     const onOpen = () => setShowOverlay(true)
-    const onClose = () => setShowOverlay(false)
+    const onClose = () => {
+      setShowOverlay(false)
+      // Re-measure title after overlay closes to prevent jump
+      setTimeout(() => {
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(measureTitle)
+      }, 100)
+    }
 
   window.addEventListener('resize', onResize)
     window.addEventListener('openShowreel', onOpen)
@@ -277,18 +284,14 @@ export default function Home() {
           <div className="container contact-inner">
             <div className="contact-block">
               <div className="contact-items">
-                <a href="mailto:artur.motion@gmail.com" className="mini-text">artur.motion@gmail.com</a>
                 <a href="https://www.linkedin.com/in/dynamatic/" className="mini-text">linkedin</a>
+                <a href="mailto:artur.motion@gmail.com" className="mini-text">artur.motion@gmail.com</a>
+                <div className="mini-text">© Artur Kalinowski 2025</div>
               </div>
             </div>
           </div>
         </section>
 
-        <footer className="footer">
-          <div className="container">
-            <div className="mini-text">© Artur Kalinowski 2025</div>
-          </div>
-        </footer>
       </main>
 
       {showOverlay && <ShowreelOverlay onClose={() => setShowOverlay(false)} />}
