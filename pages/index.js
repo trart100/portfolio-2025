@@ -184,8 +184,14 @@ export default function Home() {
     const onResize = () => {
       lastScroll.current = window.scrollY
       clearTimeout(resizeTimeout.current)
+      if (rafId) cancelAnimationFrame(rafId)
+      
       resizeTimeout.current = setTimeout(() => {
         window.scrollTo({ top: lastScroll.current })
+        // Wait for scroll to settle before measuring title
+        setTimeout(() => {
+          rafId = requestAnimationFrame(measureTitle)
+        }, 50)
       }, 120)
     }
 
@@ -292,7 +298,7 @@ export default function Home() {
               <div className="contact-items">
                 <a href="https://www.linkedin.com/in/dynamatic/" className="mini-text">linkedin</a>
                 <a href="mailto:artur.motion@gmail.com" className="mini-text">artur.motion@gmail.com</a>
-                <div className="mini-text">© Artur Kalinowski 2025</div>
+                <div className="mini-text">© Artur Kalinowski 2026</div>
               </div>
             </div>
           </div>

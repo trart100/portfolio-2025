@@ -5,6 +5,8 @@ export default function Preloader({ debugLoadTime = 0 }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
+  const [windowLoaded, setWindowLoaded] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined
@@ -22,23 +24,43 @@ export default function Preloader({ debugLoadTime = 0 }) {
     return undefined
   }, [isVisible])
 
+  // Track window.load
   useEffect(() => {
-    if (debugLoadTime > 0) {
-      const timer = setTimeout(() => setIsLoaded(true), debugLoadTime)
-      return () => clearTimeout(timer)
-    }
-
     if (typeof window === 'undefined') return undefined
-
     if (document.readyState === 'complete') {
-      setIsLoaded(true)
+      setWindowLoaded(true)
       return undefined
     }
-
-    const handleLoad = () => setIsLoaded(true)
+    const handleLoad = () => setWindowLoaded(true)
     window.addEventListener('load', handleLoad, { once: true })
     return () => window.removeEventListener('load', handleLoad)
+  }, [])
+
+  // Track background video readiness, with an 8s safety fallback
+  useEffect(() => {
+    const handleVideoReady = () => setVideoReady(true)
+    window.addEventListener('videoCanPlay', handleVideoReady, { once: true })
+    const fallback = setTimeout(() => setVideoReady(true), 8000)
+    return () => {
+      window.removeEventListener('videoCanPlay', handleVideoReady)
+      clearTimeout(fallback)
+    }
+  }, [])
+
+  // Debug override: bypass both checks after the specified delay
+  useEffect(() => {
+    if (debugLoadTime <= 0) return undefined
+    const timer = setTimeout(() => {
+      setWindowLoaded(true)
+      setVideoReady(true)
+    }, debugLoadTime)
+    return () => clearTimeout(timer)
   }, [debugLoadTime])
+
+  // Mark as fully loaded only when both signals are received
+  useEffect(() => {
+    if (windowLoaded && videoReady) setIsLoaded(true)
+  }, [windowLoaded, videoReady])
 
   useEffect(() => {
     let rafId

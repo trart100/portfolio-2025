@@ -7,6 +7,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
   const targetRef = useRef({ x: 0, y: 0 })
   const currentRef = useRef({ x: 0, y: 0 })
   const frameRef = useRef(null)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     if (movementIntensity <= 0) {
@@ -43,6 +44,24 @@ export default function VideoVisual({ movementIntensity = 18 }) {
   }, [movementIntensity])
 
   useEffect(() => {
+    const video = videoRef.current
+    if (!video) return undefined
+
+    const handleCanPlay = () => {
+      window.dispatchEvent(new CustomEvent('videoCanPlay'))
+    }
+
+    // Video may already be ready (readyState HAVE_FUTURE_DATA or higher)
+    if (video.readyState >= 3) {
+      handleCanPlay()
+      return undefined
+    }
+
+    video.addEventListener('canplay', handleCanPlay, { once: true })
+    return () => video.removeEventListener('canplay', handleCanPlay)
+  }, [])
+
+  useEffect(() => {
     const animate = () => {
       const current = currentRef.current
       const target = targetRef.current
@@ -61,6 +80,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
   return (
     <div className="video-visual" style={{ transform }}>
       <video
+        ref={videoRef}
         playsInline
         autoPlay
         muted

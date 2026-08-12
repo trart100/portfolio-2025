@@ -443,6 +443,15 @@ a {
   }
 }
 
+/* Hide custom cursor when showreel is playing */
+.showreel-overlay ~ * .cursor,
+.showreel-overlay ~ * .cursor-ring,
+.showreel-overlay ~ * .cursor-plus,
+.showreel-overlay ~ * .cursor-dot {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 /* Cursor rings */
 .cursor-ring{
   position:fixed;

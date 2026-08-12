@@ -105,8 +105,9 @@ export default function ShowreelOverlay({ onClose }) {
         <div className="overlay-video-wrap">
           <iframe 
             ref={videoRef}
-            src="https://player.vimeo.com/video/1152240405?h=c373febd16&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1" 
+            src="https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1" 
             className="overlay-video" 
+           
             frameBorder="0" 
             allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
             referrerPolicy="strict-origin-when-cross-origin"
