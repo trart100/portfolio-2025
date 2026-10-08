@@ -111,12 +111,6 @@ a {
   text-align:center;
 }
 
-/* Section spacing */
-.section.contact {
-  margin-top: 400px;
-  margin-bottom: 400px;
-}
-
 /* Typography classes (as requested) */
 .title{
   font-family: 'Manrope', sans-serif;
@@ -240,7 +234,7 @@ a {
 
 .contact-inner{ display:flex; align-items:center; justify-content:center; }
 .contact-block{ display:flex; align-items:center; justify-content:center; }
-.contact-items{ display:flex; flex-direction:column; gap:150px; align-items:center; }
+.contact-items{ display:flex; flex-direction:column; gap:100px; align-items:center; }
 .contact-items .mini-text{
   position:relative;
   font-size:25pt;
@@ -739,7 +733,6 @@ button, input[type="button"]{
   /* Reduce section spacing by 50% */
   .manifesto{ padding: 40px 0 0 0; }
   .manifesto-inner{ gap: 48px; }
-  .section.contact{ margin-top: 0; margin-bottom: 0; }
   .contact-items{ gap: 75px; }
 
   /* Make contact elements and copyright 30% smaller */
