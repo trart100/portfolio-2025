@@ -76,6 +76,7 @@ function MenuButton({ label, selected, className = '', onClick }) {
 export default function Menu() {
   const [active, setActive] = useState('')
   const [open, setOpen] = useState(false) // mobile expanded
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
 
   const handleSelect = ({ name, target }) => {
     setActive(name)
@@ -93,19 +94,32 @@ export default function Menu() {
     return () => window.removeEventListener('closeShowreel', onClose)
   }, [])
 
+  // Track the small-screen breakpoint so the scroll-spy mode follows resizes/rotation
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${SMALL_SCREEN_MAX}px)`)
+    const update = () => setIsSmallScreen(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
   // Scroll-spy: highlight the menu item of the section in view; clear at the top.
+  // While the showreel is open its button stays highlighted (the overlay scrolls
+  // the page to the top, which would otherwise clear it).
   useEffect(() => {
     const sections = SPY_SECTION_IDS
       .map((id) => document.getElementById(id))
       .filter(Boolean)
 
+    const spySet = (name) => setActive((prev) => (prev === 'showreel' ? prev : name))
+
     const clearAtTop = () => {
-      if (window.scrollY <= TOP_RESET_PX) setActive('')
+      if (window.scrollY <= TOP_RESET_PX) spySet('')
     }
 
     // Small screens: viewport-midpoint check, more reliable than
     // intersectionRatio on tall/narrow viewports.
-    if (window.innerWidth <= SMALL_SCREEN_MAX) {
+    if (isSmallScreen) {
       const onScroll = () => {
         clearAtTop()
         const mid = window.innerHeight / 2
@@ -113,7 +127,7 @@ export default function Menu() {
           const rect = el.getBoundingClientRect()
           return mid >= rect.top && mid <= rect.bottom
         })
-        if (current) setActive(current.id)
+        if (current) spySet(current.id)
       }
 
       window.addEventListener('scroll', onScroll, { passive: true })
@@ -130,7 +144,7 @@ export default function Menu() {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && entry.intersectionRatio > 0.12) {
-          setActive(entry.target.id)
+          spySet(entry.target.id)
         }
       })
     }, { threshold: [0, 0.12, 0.25, 0.5, 0.75, 1] })
@@ -142,7 +156,7 @@ export default function Menu() {
       window.removeEventListener('scroll', clearAtTop)
       io.disconnect()
     }
-  }, [])
+  }, [isSmallScreen])
 
   const renderButtons = (className) => NAV_ITEMS.map((item) => (
     <MenuButton

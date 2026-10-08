@@ -1,25 +1,30 @@
-# Motion Designer Portfolio — One Pager (Next + GSAP)
+# Artur Kalinowski — Motion Design Portfolio (one pager)
 
-Scaffold for a motion-designer one-page portfolio using Next.js and GSAP. Includes:
+Next.js (pages router) + GSAP single-page portfolio: hero with a looping video and
+interactive dot grid, a manifesto with word-by-word reveal, a contact section and a
+Vimeo showreel overlay.
 
-- Dot grid background
-- Fixed looping video visual via `VideoVisual`
-- Three sections (Home / Manifesto / Contact)
-- Basic custom cursor and centered bottom menu
-- Typography classes using Google Fonts
-- Not using git in the project
+## Run locally
 
-How to run
+```
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build check
+```
 
-1. Install dependencies:
+## Structure
 
-   npm install
+- `pages/index.js` — page layout, manifesto text, title auto-fit
+- `pages/_app.js` — global UI: preloader, FPS/version meter, privacy box
+- `components/` — one component per feature (`Menu`, `Cursor`, `DotGrid`, `VideoVisual`,
+  `ShowreelOverlay`, `AnimatedParagraph`, `AnimatedInformation`, `Inertia`, …)
+- `lib/gsap.js` — the single GSAP import point (registers ScrollTrigger and ScrollToPlugin);
+  import GSAP from here, not from `gsap` directly
+- `styles/globals.css` — all styles; responsive rules live at the end of the file
+- `public/assets/` — background video and favicon
 
-2. Start dev server:
+## Versioning
 
-   npm run dev
-
-Notes
-
-- This repo is a scaffold only. Run `npm install` to fetch packages before running dev.
-- The hero video visual now uses a looping MP4 (`/assets/video_visual_for_website_1.mp4`), which keeps the feel of the immersive header without an iframe.
+The version from `package.json` is shown bottom-left next to the FPS readout. Bump it on
+every change (`npm version 6.2.X --no-git-tag-version`) and tag the commit `v6.2.X`, so a
+preview or deployment can be matched to the code at a glance.

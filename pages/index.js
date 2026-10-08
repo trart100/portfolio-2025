@@ -109,11 +109,21 @@ export default function Home() {
 
     let lastWidth = window.innerWidth
 
+    // Only react to width changes. Height-only resizes happen constantly on mobile
+    // (address bar showing/hiding while scrolling); restoring scroll then would
+    // yank the page back mid-swipe.
     const onResize = () => {
+      const width = window.innerWidth
+      if (width === lastWidth) return
+      lastWidth = width
+
+      // re-fit the title right away, then again once the layout has settled
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(measureTitle)
+
+      // remember scroll position and restore it after the reflow
       lastScroll.current = window.scrollY
       clearTimeout(resizeTimeout.current)
-      if (rafId) cancelAnimationFrame(rafId)
-      
       resizeTimeout.current = setTimeout(() => {
         window.scrollTo({ top: lastScroll.current })
         // Wait for scroll to settle before measuring title
@@ -121,15 +131,6 @@ export default function Home() {
           rafId = requestAnimationFrame(measureTitle)
         }, 50)
       }, 120)
-    }
-
-    const onTitleResize = () => {
-      const currentWidth = window.innerWidth
-      if (currentWidth !== lastWidth) {
-        lastWidth = currentWidth
-        if (rafId) cancelAnimationFrame(rafId)
-        rafId = requestAnimationFrame(measureTitle)
-      }
     }
 
     const onOpen = () => setShowOverlay(true)
@@ -143,7 +144,6 @@ export default function Home() {
     }
 
     window.addEventListener('resize', onResize)
-    window.addEventListener('resize', onTitleResize)
     window.addEventListener('openShowreel', onOpen)
     window.addEventListener('closeShowreel', onClose)
 
@@ -154,9 +154,9 @@ export default function Home() {
 
     return () => {
       window.removeEventListener('resize', onResize)
-      window.removeEventListener('resize', onTitleResize)
       window.removeEventListener('openShowreel', onOpen)
       window.removeEventListener('closeShowreel', onClose)
+      clearTimeout(resizeTimeout.current)
       if (rafId) cancelAnimationFrame(rafId)
       try { const m = document.querySelector('#__title-measure-canvas'); if (m && m.parentNode) m.parentNode.removeChild(m) } catch(e) {}
     }

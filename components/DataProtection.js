@@ -34,9 +34,23 @@ export default function DataProtection() {
     setIsExpanded(!isExpanded)
   }
 
+  const handleHeaderKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      toggleExpanded()
+    }
+  }
+
   return (
-    <div className={`data-protection ${isExpanded ? 'data-protection--expanded' : ''}`} aria-hidden={!isExpanded}>
-      <div className="data-protection-header" onClick={toggleExpanded} role="button" tabIndex={0}>
+    <div className={`data-protection ${isExpanded ? 'data-protection--expanded' : ''}`}>
+      <div
+        className="data-protection-header"
+        onClick={toggleExpanded}
+        onKeyDown={handleHeaderKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
         <span className="data-protection-label">
           {hasConsented === null ? 'Privacy' : hasConsented ? 'Privacy ✓' : 'Privacy ✗'}
         </span>

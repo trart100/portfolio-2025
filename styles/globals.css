@@ -264,25 +264,15 @@ a {
   visibility:hidden;
 }
 
-/* Hide privacy and FPS counter when showreel overlay is active */
-.showreel-overlay[style*="visibility: visible"] ~ .data-protection,
-.showreel-overlay[style*="visibility: visible"] ~ .fps-meter {
-  display: none !important;
+/* While the showreel is open (class set on <html> by ShowreelOverlay) hide the
+   custom cursor, FPS meter and privacy box for a clean viewing experience */
+.showreel-open .cursor,
+.showreel-open .fps-meter,
+.showreel-open .data-protection{
+  display: none;
 }
-
-/* Hide privacy and FPS counter when showreel overlay is visible */
-.showreel-overlay ~ .data-protection,
-.showreel-overlay ~ .fps-meter {
-  display: none !important;
-}
-
-/* Hide cursor elements when showreel overlay is active */
-.showreel-overlay[style*="visibility: visible"] ~ .cursor,
-.showreel-overlay[style*="visibility: visible"] ~ .cursor-ring,
-.showreel-overlay[style*="visibility: visible"] ~ .cursor-plus,
-.showreel-overlay[style*="visibility: visible"] ~ .cursor-dot {
-  display: none !important;
-}
+/* Scroll lock while the showreel is open (see ShowreelOverlay) */
+.showreel-scroll-lock{ overflow: hidden; }
 
 .overlay-contents{
   position:relative;
@@ -346,7 +336,6 @@ a {
   position:fixed;
   top:0; left:0;
   pointer-events:none;
-  /* raise above showreel overlay (z-index:1200) and overlay-close (z-index:1300) */
   z-index:1500;
 }
 
@@ -358,15 +347,6 @@ a {
   .cursor-dot {
     display: none !important;
   }
-}
-
-/* Hide custom cursor when showreel is playing */
-.showreel-overlay ~ * .cursor,
-.showreel-overlay ~ * .cursor-ring,
-.showreel-overlay ~ * .cursor-plus,
-.showreel-overlay ~ * .cursor-dot {
-  opacity: 0 !important;
-  visibility: hidden !important;
 }
 
 /* Cursor rings */

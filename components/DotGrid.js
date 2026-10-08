@@ -171,15 +171,21 @@ export default function DotGrid({
       wake()
     }
 
+    // Flatten the grid when the pointer leaves the page (relatedTarget is null
+    // only when leaving the window; window 'mouseleave' never fires)
+    const handleMouseOut = (event) => {
+      if (!event.relatedTarget) resetTargets()
+    }
+
     window.addEventListener('mousemove', handleWindowMouseMove)
-    window.addEventListener('mouseleave', resetTargets)
+    document.addEventListener('mouseout', handleMouseOut)
     wake(true)
 
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
       wakeRef.current = () => {}
       window.removeEventListener('mousemove', handleWindowMouseMove)
-      window.removeEventListener('mouseleave', resetTargets)
+      document.removeEventListener('mouseout', handleMouseOut)
       if (containerRef.current) {
         containerRef.current.style.transform = ''
       }

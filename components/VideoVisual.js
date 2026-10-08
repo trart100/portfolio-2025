@@ -52,15 +52,19 @@ export default function VideoVisual({ movementIntensity = 18 }) {
       wake()
     }
 
+    // Recenter only when the pointer actually leaves the page (mouseout bubbles
+    // from every element; relatedTarget is null only when leaving the window)
+    const handleMouseOut = (event) => {
+      if (!event.relatedTarget) release()
+    }
+
     window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseleave', release)
-    window.addEventListener('mouseout', release)
+    document.addEventListener('mouseout', handleMouseOut)
 
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseleave', release)
-      window.removeEventListener('mouseout', release)
+      document.removeEventListener('mouseout', handleMouseOut)
     }
   }, [movementIntensity])
 
@@ -90,7 +94,6 @@ export default function VideoVisual({ movementIntensity = 18 }) {
         autoPlay
         muted
         loop
-        poster="/assets/video_visual_for_website_1.mp4"
         style={{ pointerEvents: 'none', opacity: 0.8 }}
       >
         <source src="/assets/video_visual_for_website_1.mp4" type="video/mp4" />

@@ -94,7 +94,12 @@ export default function AnimatedParagraph({ children, highlights = [] }) {
 
     createTriggers()
 
+    // Rebuild only on width changes; height-only resizes (mobile address bar)
+    // are already handled by ScrollTrigger and would otherwise re-hide the words
+    let lastWidth = window.innerWidth
     const onResize = () => {
+      if (window.innerWidth === lastWidth) return
+      lastWidth = window.innerWidth
       clearTimeout(resizeTimer)
       resizeTimer = setTimeout(() => {
         createTriggers()
