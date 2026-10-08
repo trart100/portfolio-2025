@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+// Site version shown next to the FPS readout; bump "version" in package.json on every change
+import pkg from '../package.json'
 
 const SAMPLE_COUNT = 30
 
@@ -53,7 +55,8 @@ export default function FpsMeter({ visible = process.env.NODE_ENV === 'developme
 
   return (
     <div className="fps-meter" aria-hidden>
-      <div className="fps-value" ref={textRef}>0 × 0 / 0 FPS</div>
+      <span className="fps-value" ref={textRef}>0 × 0 / 0 FPS</span>
+      <span className="fps-version">v{pkg.version}</span>
     </div>
   )
 }
