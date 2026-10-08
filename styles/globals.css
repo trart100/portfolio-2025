@@ -598,7 +598,7 @@ button, input[type="button"]{
 .data-protection{ 
   position:fixed; 
   right:12px; 
-  bottom:12px; 
+  top:12px; /* top-right at all widths: at the bottom it collides with the menu row */
   background:rgba(0,0,0,0.6); 
   color:#fff; 
   border-radius:8px; 
@@ -705,9 +705,6 @@ button, input[type="button"]{
 @media (max-width: 1300px){
   .video-visual{ width: min(100vmax, 100vw); }
   .main-text{ font-size: 36px; line-height: 66px; } /* 20% smaller: 40px * 0.8 */
-
-  /* Move privacy to top right corner */
-  .data-protection{ top: 12px; bottom: auto; }
 }
 
 /* Below 900px the desktop button row is replaced by the hamburger menu */
