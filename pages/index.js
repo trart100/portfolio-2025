@@ -202,7 +202,7 @@ export default function Home() {
               <VideoVisual />
             </div>
             <h1 className="title">Artur Kalinowski</h1>
-            <AnimatedInformation displayInterval={1000} />
+            <AnimatedInformation />
           </div>
         </section>
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 
 const defaultTexts = [
@@ -126,18 +126,25 @@ export default function AnimatedInformation({
     })
   }
 
-  const characters = displayText.split('')
+  const words = displayText.split(' ')
 
+  // Letters sit inside non-wrapping word spans so lines only break between words.
+  // Screen readers get all lines as plain text instead of the per-letter spans.
   return (
     <div ref={containerRef} className="animated-information">
-      {characters.map((char, index) => (
-        <span
-          key={`${currentIndex}-${index}`}
-          className={char === ' ' ? 'char-span char-span--space' : 'char-span'}
-        >
-          {char}
-        </span>
-      ))}
+      <span className="sr-only">{texts.join('. ')}</span>
+      <span aria-hidden="true">
+        {words.map((word, w) => (
+          <Fragment key={`${currentIndex}-${w}`}>
+            {w > 0 && ' '}
+            <span className="word-span">
+              {word.split('').map((char, c) => (
+                <span key={c} className="char-span">{char}</span>
+              ))}
+            </span>
+          </Fragment>
+        ))}
+      </span>
     </div>
   )
 }

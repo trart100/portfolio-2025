@@ -146,8 +146,21 @@ a {
   color: #6e6e6e;
   text-align: center;
 }
+.word-span{ display:inline-block; white-space:nowrap; }
 .char-span{ display:inline-block; }
-.char-span--space{ white-space:pre; }
+
+/* Visually hidden, still read by screen readers */
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
 
 .main-text{
   font-family: 'Space Grotesk', sans-serif;
