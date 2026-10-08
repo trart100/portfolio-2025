@@ -203,7 +203,9 @@ a {
 }
 
 /* Animated paragraph word spans */
-.ap-word{ display:inline-block; white-space:pre; will-change: transform, opacity; }
+/* Animated paragraph word spans. No will-change: ~200 permanent GPU layers cost
+   more than they save; the browser promotes them on its own while GSAP animates. */
+.ap-word{ display:inline-block; white-space:pre; }
 .manifesto-highlight{ color:#ffffff; }
 
 /* Contact */
@@ -721,7 +723,6 @@ button, input[type="button"]{
     transform: none !important;
     opacity: 1 !important;
     visibility: visible !important;
-    will-change: auto;
   }
 
   .animated-information{ font-size: 18pt; }

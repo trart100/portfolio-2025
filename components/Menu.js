@@ -116,7 +116,7 @@ export default function Menu() {
         if (current) setActive(current.id)
       }
 
-      window.addEventListener('scroll', onScroll)
+      window.addEventListener('scroll', onScroll, { passive: true })
       window.addEventListener('resize', onScroll)
       onScroll()
 
@@ -136,7 +136,7 @@ export default function Menu() {
     }, { threshold: [0, 0.12, 0.25, 0.5, 0.75, 1] })
 
     sections.forEach((el) => io.observe(el))
-    window.addEventListener('scroll', clearAtTop)
+    window.addEventListener('scroll', clearAtTop, { passive: true })
 
     return () => {
       window.removeEventListener('scroll', clearAtTop)

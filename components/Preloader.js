@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function Preloader() {
-  const [progress, setProgress] = useState(0)
+  const progressRef = useRef(0)
+  const labelRef = useRef(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
@@ -46,14 +47,30 @@ export default function Preloader() {
     if (windowLoaded && videoReady) setIsLoaded(true)
   }, [windowLoaded, videoReady])
 
+  // Fake progress creeps toward 99 until loaded, then jumps to 100.
+  // Written straight to the DOM so React doesn't re-render every frame.
   useEffect(() => {
-    let rafId
+    let rafId = null
+    let shown = ''
+
+    const write = () => {
+      const next = `${Math.min(100, Math.round(progressRef.current))}`
+      if (next !== shown && labelRef.current) {
+        shown = next
+        labelRef.current.textContent = next
+      }
+    }
+
+    if (isLoaded) {
+      progressRef.current = 100
+      write()
+      return undefined
+    }
+
     const step = () => {
-      setProgress((prev) => {
-        if (isLoaded) return 100
-        const drift = 0.25 + Math.random() * 0.25
-        return Math.min(99, prev + drift)
-      })
+      const drift = 0.25 + Math.random() * 0.25
+      progressRef.current = Math.min(99, progressRef.current + drift)
+      write()
       rafId = requestAnimationFrame(step)
     }
 
@@ -67,7 +84,6 @@ export default function Preloader() {
   useEffect(() => {
     if (!isLoaded) return undefined
 
-    setProgress(100)
     const showExit = window.setTimeout(() => setIsExiting(true), 180)
     const hide = window.setTimeout(() => setIsVisible(false), 900)
 
@@ -79,16 +95,14 @@ export default function Preloader() {
 
   if (!isVisible) return null
 
-  const progressLabel = `${Math.min(100, Math.round(progress))}`
-
   return (
     <div className={`preloader-root ${isExiting ? 'preloader--done' : ''}`} aria-hidden>
       <div className="preloader-content">
         <div className="preloader-circle preloader-circle--large" />
         <div className="preloader-circle preloader-circle--medium" />
         <div className="preloader-circle preloader-circle--small" />
-        <span className="preloader-text mini-text" aria-live="polite">
-          {progressLabel}
+        <span className="preloader-text mini-text" aria-live="polite" ref={labelRef}>
+          0
         </span>
       </div>
     </div>

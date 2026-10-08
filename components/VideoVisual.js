@@ -1,20 +1,39 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+const LERP = 0.15
+const SETTLE_PX = 0.01
+
+const toTransform = (x, y) => `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
 
 export default function VideoVisual({ movementIntensity = 18 }) {
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const targetRef = useRef({ x: 0, y: 0 })
-  const currentRef = useRef({ x: 0, y: 0 })
-  const frameRef = useRef(null)
+  const wrapRef = useRef(null)
   const videoRef = useRef(null)
 
+  // Parallax: ease the video toward an offset based on the mouse position.
+  // Written straight to the DOM (no React re-render) and the loop sleeps when settled.
   useEffect(() => {
-    if (movementIntensity <= 0) {
-      targetRef.current = { x: 0, y: 0 }
-      currentRef.current = { x: 0, y: 0 }
-      setOffset({ x: 0, y: 0 })
-      return undefined
+    const el = wrapRef.current
+    if (!el || movementIntensity <= 0) return undefined
+
+    const target = { x: 0, y: 0 }
+    const current = { x: 0, y: 0 }
+    let frameId = null
+
+    const animate = () => {
+      current.x += (target.x - current.x) * LERP
+      current.y += (target.y - current.y) * LERP
+      const settled = Math.abs(target.x - current.x) < SETTLE_PX && Math.abs(target.y - current.y) < SETTLE_PX
+      if (settled) {
+        current.x = target.x
+        current.y = target.y
+      }
+      el.style.transform = toTransform(current.x, current.y)
+      frameId = settled ? null : requestAnimationFrame(animate)
+    }
+
+    const wake = () => {
+      if (frameId == null) frameId = requestAnimationFrame(animate)
     }
 
     const handleMouseMove = (event) => {
@@ -22,14 +41,15 @@ export default function VideoVisual({ movementIntensity = 18 }) {
       const height = window.innerHeight || 1
       const relativeX = (event.clientX / width - 0.5) * 2
       const relativeY = (event.clientY / height - 0.5) * 2
-      targetRef.current = {
-        x: clamp(relativeX, -1, 1) * movementIntensity,
-        y: clamp(relativeY, -1, 1) * movementIntensity
-      }
+      target.x = clamp(relativeX, -1, 1) * movementIntensity
+      target.y = clamp(relativeY, -1, 1) * movementIntensity
+      wake()
     }
 
     const release = () => {
-      targetRef.current = { x: 0, y: 0 }
+      target.x = 0
+      target.y = 0
+      wake()
     }
 
     window.addEventListener('mousemove', handleMouseMove)
@@ -37,6 +57,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     window.addEventListener('mouseout', release)
 
     return () => {
+      if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseleave', release)
       window.removeEventListener('mouseout', release)
@@ -61,24 +82,8 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     return () => video.removeEventListener('canplay', handleCanPlay)
   }, [])
 
-  useEffect(() => {
-    const animate = () => {
-      const current = currentRef.current
-      const target = targetRef.current
-      current.x += (target.x - current.x) * 0.15
-      current.y += (target.y - current.y) * 0.15
-      setOffset({ x: current.x, y: current.y })
-      frameRef.current = requestAnimationFrame(animate)
-    }
-
-    frameRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(frameRef.current)
-  }, [])
-
-  const transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`
-
   return (
-    <div className="video-visual" style={{ transform }}>
+    <div ref={wrapRef} className="video-visual" style={{ transform: toTransform(0, 0) }}>
       <video
         ref={videoRef}
         playsInline

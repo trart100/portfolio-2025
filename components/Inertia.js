@@ -33,6 +33,7 @@ export default function Inertia() {
           const shift = Math.max(-max, Math.min(max, raw * factor))
           els.forEach((el) => { el._targetY = shift; el._lastActive = now })
         })
+        wakeLoop()
       }
 
       // Coalesce wheel/touch deltas into one applyShift per frame
@@ -61,10 +62,10 @@ export default function Inertia() {
 
       let prevTime = performance.now()
       const loop = (now) => {
-        rafLoop = requestAnimationFrame(loop)
         const elapsed = Math.min(64, now - prevTime)
         const dt = elapsed / 16.6667 // ~1 at 60fps
         prevTime = now
+        let active = false
 
         for (let i = 0; i < allEls.length; i++) {
           const el = allEls[i]
@@ -97,11 +98,21 @@ export default function Inertia() {
             el.style.transform = `translate3d(0, ${el._currentY}px, 0)`
             el._hasTransform = true
           }
+
+          if (el._currentY !== 0 || el._targetY !== 0) active = true
+          else el._velY = 0
         }
+
+        // Sleep once every element is back at rest; input wakes the loop again
+        rafLoop = active ? requestAnimationFrame(loop) : null
       }
 
-      // start loop
-      rafLoop = requestAnimationFrame(loop)
+      const wakeLoop = () => {
+        if (rafLoop == null) {
+          prevTime = performance.now()
+          rafLoop = requestAnimationFrame(loop)
+        }
+      }
 
       // Wheel handler (user scroll)
       const onWheel = (e) => { scheduleShift(e.deltaY) }

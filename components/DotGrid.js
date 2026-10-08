@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const PAGE_MARGIN = 34
 const BASE_HORIZONTAL_SPACING = 68
@@ -9,6 +9,8 @@ const MAX_ROTATION_DEGREES = 2
 const DEFAULT_REACTION_SPEED = 0.08
 const DEFAULT_PROXIMITY_DISTANCE = 200
 const DEFAULT_SCALE_DELTA = .7
+// Below this difference (scale units / degrees) a value counts as settled
+const SETTLE_EPSILON = 0.0005
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
@@ -51,21 +53,10 @@ export default function DotGrid({
   const scaleTargetsRef = useRef(new Map())
   const scaleCurrentRef = useRef(new Map())
   const cursorRef = useRef({ x: 0, y: 0, active: false })
-
-  const updateRotationTargets = useCallback((relativeX, relativeY) => {
-    rotationRef.current.targetY = (relativeX - 0.5) * MAX_ROTATION_DEGREES * 2
-    rotationRef.current.targetX = (0.5 - relativeY) * MAX_ROTATION_DEGREES * 2
-  }, [])
-
-  const resetTargets = useCallback(() => {
-    rotationRef.current.targetX = 0
-    rotationRef.current.targetY = 0
-    cursorRef.current.active = false
-    scaleTargetsRef.current.forEach((_, id) => scaleTargetsRef.current.set(id, 1))
-  }, [])
+  // Set by the animation effect; lets the resize handler restart the sleeping loop
+  const wakeRef = useRef(() => {})
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
     let isMounted = true
 
     const rebuildDots = () => {
@@ -84,6 +75,7 @@ export default function DotGrid({
 
       dotPositionsRef.current = positions
       setDots(nextDots)
+      wakeRef.current(true)
     }
 
     rebuildDots()
@@ -95,82 +87,104 @@ export default function DotGrid({
     }
   }, [])
 
-  const updateScaleTargets = useCallback(() => {
-    const cursor = cursorRef.current
-    if (!cursor.active) return
-    const positions = dotPositionsRef.current
-    const farRange = proximityDistance > 0 ? proximityDistance * 2 : 200
-
-    positions.forEach((pos, id) => {
-      const distance = Math.hypot(pos.x - cursor.x, pos.y - cursor.y)
-      let targetScale
-
-      if (distance <= proximityDistance) {
-        const nearFactor = proximityDistance > 0 ? distance / proximityDistance : 0
-        targetScale = 1 + scaleDelta * (1 - clamp(nearFactor, 0, 1))
-      } else {
-        const farFactor = clamp((distance - proximityDistance) / farRange, 0, 1)
-        targetScale = 1 - scaleDelta * farFactor
-      }
-
-      scaleTargetsRef.current.set(
-        id,
-        clamp(targetScale, 1 - scaleDelta, 1 + scaleDelta)
-      )
-    })
-  }, [proximityDistance, scaleDelta])
-
   useEffect(() => {
-    const handleWindowMouseMove = (event) => {
-      const width = window.innerWidth
-      const height = window.innerHeight
-      const relativeX = width > 0 ? event.clientX / width : 0
-      const relativeY = height > 0 ? event.clientY / height : 0
+    const rotation = rotationRef.current
+    const farRange = proximityDistance > 0 ? proximityDistance * 2 : 200
+    let frameId = null
+    let targetsDirty = false
 
-      cursorRef.current.x = event.clientX
-      cursorRef.current.y = event.clientY
-      cursorRef.current.active = true
+    const updateScaleTargets = () => {
+      const cursor = cursorRef.current
+      if (!cursor.active) return
 
-      updateRotationTargets(clamp(relativeX, 0, 1), clamp(relativeY, 0, 1))
+      dotPositionsRef.current.forEach((pos, id) => {
+        const distance = Math.hypot(pos.x - cursor.x, pos.y - cursor.y)
+        let targetScale
+
+        if (distance <= proximityDistance) {
+          const nearFactor = proximityDistance > 0 ? distance / proximityDistance : 0
+          targetScale = 1 + scaleDelta * (1 - clamp(nearFactor, 0, 1))
+        } else {
+          const farFactor = clamp((distance - proximityDistance) / farRange, 0, 1)
+          targetScale = 1 - scaleDelta * farFactor
+        }
+
+        scaleTargetsRef.current.set(id, clamp(targetScale, 1 - scaleDelta, 1 + scaleDelta))
+      })
     }
 
-    window.addEventListener('mousemove', handleWindowMouseMove)
-    window.addEventListener('mouseleave', resetTargets)
-
-    let frameId
-
     const animate = () => {
-      const rotation = rotationRef.current
+      if (targetsDirty) {
+        updateScaleTargets()
+        targetsDirty = false
+      }
+
       rotation.x += (rotation.targetX - rotation.x) * reactionSpeed
       rotation.y += (rotation.targetY - rotation.y) * reactionSpeed
-      updateScaleTargets()
+      let moving = Math.abs(rotation.targetX - rotation.x) > SETTLE_EPSILON ||
+        Math.abs(rotation.targetY - rotation.y) > SETTLE_EPSILON
 
       dotElementsRef.current.forEach((element, id) => {
         const target = scaleTargetsRef.current.get(id) ?? 1
         const current = scaleCurrentRef.current.get(id) ?? 1
+        if (Math.abs(target - current) <= SETTLE_EPSILON) return
         const next = current + (target - current) * reactionSpeed
         scaleCurrentRef.current.set(id, next)
         element.style.transform = `translate(-50%, -50%) scale(${next})`
+        moving = true
       })
 
       if (containerRef.current) {
         containerRef.current.style.transform = `perspective(1300px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
       }
 
-      frameId = requestAnimationFrame(animate)
+      // Sleep once everything has settled; input wakes the loop again
+      frameId = moving ? requestAnimationFrame(animate) : null
     }
 
-    frameId = requestAnimationFrame(animate)
+    const wake = (recomputeTargets = false) => {
+      if (recomputeTargets) targetsDirty = true
+      if (frameId == null) frameId = requestAnimationFrame(animate)
+    }
+    wakeRef.current = wake
+
+    const handleWindowMouseMove = (event) => {
+      const width = window.innerWidth
+      const height = window.innerHeight
+      const relativeX = clamp(width > 0 ? event.clientX / width : 0, 0, 1)
+      const relativeY = clamp(height > 0 ? event.clientY / height : 0, 0, 1)
+
+      cursorRef.current.x = event.clientX
+      cursorRef.current.y = event.clientY
+      cursorRef.current.active = true
+
+      rotation.targetY = (relativeX - 0.5) * MAX_ROTATION_DEGREES * 2
+      rotation.targetX = (0.5 - relativeY) * MAX_ROTATION_DEGREES * 2
+      wake(true)
+    }
+
+    const resetTargets = () => {
+      rotation.targetX = 0
+      rotation.targetY = 0
+      cursorRef.current.active = false
+      scaleTargetsRef.current.forEach((_, id) => scaleTargetsRef.current.set(id, 1))
+      wake()
+    }
+
+    window.addEventListener('mousemove', handleWindowMouseMove)
+    window.addEventListener('mouseleave', resetTargets)
+    wake(true)
 
     return () => {
-      cancelAnimationFrame(frameId)
+      if (frameId != null) cancelAnimationFrame(frameId)
+      wakeRef.current = () => {}
       window.removeEventListener('mousemove', handleWindowMouseMove)
-      window.removeEventListener('mouseout', resetTargets)
+      window.removeEventListener('mouseleave', resetTargets)
       if (containerRef.current) {
         containerRef.current.style.transform = ''
       }
     }
-  }, [reactionSpeed, resetTargets, updateRotationTargets, updateScaleTargets])
+  }, [reactionSpeed, proximityDistance, scaleDelta])
 
   return (
     <div
@@ -218,8 +232,7 @@ export default function DotGrid({
                 height: DOT_SIZE,
                 background: DOT_COLOR,
                 borderRadius: '50%',
-                transform: 'translate(-50%, -50%) scale(1)',
-                willChange: 'transform'
+                transform: 'translate(-50%, -50%) scale(1)'
               }}
             />
           ))}

@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 
+// Ring offsets below this (px) count as caught up with the mouse
+const SETTLE_PX = 0.05
+
 export default function Cursor() {
   const largeRef = useRef(null)
   const medRef = useRef(null)
@@ -46,7 +49,7 @@ export default function Cursor() {
       target.current.x = e.clientX
       target.current.y = e.clientY
 
-      // plus sign should always follow the mouse (even while rings are attached)
+      // plus sign and dot follow the mouse directly
       if (plusEl) {
         plusEl.style.left = `${e.clientX}px`
         plusEl.style.top = `${e.clientY}px`
@@ -55,10 +58,13 @@ export default function Cursor() {
         dotEl.style.left = `${e.clientX}px`
         dotEl.style.top = `${e.clientY}px`
       }
+      wake()
     }
 
-    // lerp loop for the two smaller rings to create staggered follow
+    // lerp loop: each ring trails the previous one to create a staggered follow.
+    // Sleeps once all rings have caught up with the mouse.
     const loop = () => {
+      const p = pos.current
       const tx = target.current.x
       const ty = target.current.y
 
@@ -68,30 +74,41 @@ export default function Cursor() {
       const sF = 0.1
 
       // large follows target quickly
-      pos.current.lx += (tx - pos.current.lx) * lF
-      pos.current.ly += (ty - pos.current.ly) * lF
+      p.lx += (tx - p.lx) * lF
+      p.ly += (ty - p.ly) * lF
       // medium follows the large ring (creates consistent trailing)
-      pos.current.mx += (pos.current.lx - pos.current.mx) * mF
-      pos.current.my += (pos.current.ly - pos.current.my) * mF
+      p.mx += (p.lx - p.mx) * mF
+      p.my += (p.ly - p.my) * mF
       // small follows the medium ring
-      pos.current.sx += (pos.current.mx - pos.current.sx) * sF
-      pos.current.sy += (pos.current.my - pos.current.sy) * sF
+      p.sx += (p.mx - p.sx) * sF
+      p.sy += (p.my - p.sy) * sF
+
+      const settled = [tx - p.lx, ty - p.ly, p.lx - p.mx, p.ly - p.my, p.mx - p.sx, p.my - p.sy]
+        .every((d) => Math.abs(d) < SETTLE_PX)
+      if (settled) {
+        p.lx = p.mx = p.sx = tx
+        p.ly = p.my = p.sy = ty
+      }
 
       // Only left/top are written here; CSS handles centering and GSAP handles scale.
-      largeEl.style.left = `${pos.current.lx}px`
-      largeEl.style.top = `${pos.current.ly}px`
+      largeEl.style.left = `${p.lx}px`
+      largeEl.style.top = `${p.ly}px`
 
-      medEl.style.left = `${pos.current.mx}px`
-      medEl.style.top = `${pos.current.my}px`
+      medEl.style.left = `${p.mx}px`
+      medEl.style.top = `${p.my}px`
 
-      smallEl.style.left = `${pos.current.sx}px`
-      smallEl.style.top = `${pos.current.sy}px`
+      smallEl.style.left = `${p.sx}px`
+      smallEl.style.top = `${p.sy}px`
 
-      rafId.current = requestAnimationFrame(loop)
+      rafId.current = settled ? null : requestAnimationFrame(loop)
+    }
+
+    const wake = () => {
+      if (rafId.current == null) rafId.current = requestAnimationFrame(loop)
     }
 
     document.addEventListener('mousemove', onMove, { passive: true })
-    rafId.current = requestAnimationFrame(loop)
+    wake()
 
     // Sequence orchestration for menu hover -> collapse rings -> plus -> dot
     // We use GSAP to animate scales directly on the elements. This avoids

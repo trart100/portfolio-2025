@@ -18,18 +18,28 @@ export default function AnimatedInformation({
   const [displayText, setDisplayText] = useState(texts[0] || '')
   const intervalRef = useRef(null)
   const animatingRef = useRef(false)
+  const visibleRef = useRef(true)
 
   // Initialize display text
   useEffect(() => {
     setDisplayText(texts[0] || '')
   }, [texts])
 
+  // Skip switching while scrolled out of view (saves work; resumes on return)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver(([entry]) => { visibleRef.current = entry.isIntersecting })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   // Restarting the interval on each index change keeps the cadence anchored to the last switch
   useEffect(() => {
     if (texts.length <= 1) return
 
     intervalRef.current = setInterval(() => {
-      if (!animatingRef.current) {
+      if (!animatingRef.current && visibleRef.current) {
         switchToNext()
       }
     }, displayInterval)

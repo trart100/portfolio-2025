@@ -1,51 +1,59 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+
+const SAMPLE_COUNT = 30
 
 export default function FpsMeter({ visible = process.env.NODE_ENV === 'development' }) {
-  const [fps, setFps] = useState(0)
-  const [winSize, setWinSize] = useState({ w: 0, h: 0 })
-  const rafRef = useRef(null)
-  const lastRef = useRef(performance.now())
-  const framesRef = useRef(0)
-  const samplesRef = useRef([])
+  const textRef = useRef(null)
 
+  // Measures rAF rate every frame but only touches the DOM when the label changes
   useEffect(() => {
-    if (!visible || typeof window === 'undefined') return
+    if (!visible) return undefined
+
+    const samples = []
+    const size = { w: window.innerWidth, h: window.innerHeight }
+    let fps = 0
+    let last = performance.now()
+    let label = ''
+    let rafId = null
+
+    const render = () => {
+      const next = `${size.w} × ${size.h} / ${fps} FPS`
+      if (next !== label && textRef.current) {
+        label = next
+        textRef.current.textContent = next
+      }
+    }
 
     const loop = (t) => {
-      rafRef.current = requestAnimationFrame(loop)
-      framesRef.current += 1
-      const last = lastRef.current
-      const delta = t - last
-      // compute instant fps
-      const instant = 1000 / (delta || 1)
-      samplesRef.current.push(instant)
-      if (samplesRef.current.length > 30) samplesRef.current.shift()
-      const avg = samplesRef.current.reduce((a, b) => a + b, 0) / samplesRef.current.length
-      setFps(Math.round(avg))
-      lastRef.current = t
+      rafId = requestAnimationFrame(loop)
+      samples.push(1000 / ((t - last) || 1))
+      if (samples.length > SAMPLE_COUNT) samples.shift()
+      fps = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length)
+      last = t
+      render()
     }
 
-    rafRef.current = requestAnimationFrame(loop)
+    const onResize = () => {
+      size.w = window.innerWidth
+      size.h = window.innerHeight
+      render()
+    }
+
+    render()
+    rafId = requestAnimationFrame(loop)
+    window.addEventListener('resize', onResize)
+
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
+      cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', onResize)
     }
-  }, [visible])
-
-  useEffect(() => {
-    if (!visible || typeof window === 'undefined') return
-    
-    const updateSize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight })
-    updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
   }, [visible])
 
   if (!visible) return null
 
   return (
     <div className="fps-meter" aria-hidden>
-      <div className="fps-value">{winSize.w} × {winSize.h} / {fps} FPS</div>
+      <div className="fps-value" ref={textRef}>0 × 0 / 0 FPS</div>
     </div>
   )
 }
