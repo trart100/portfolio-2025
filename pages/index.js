@@ -203,6 +203,18 @@ export default function Home() {
             </div>
             <h1 className="title">Artur Kalinowski</h1>
             <AnimatedInformation displayInterval={1000} />
+            <div className="home-actions" role="group" aria-label="Work and contact">
+              <button
+                type="button"
+                className="home-action home-action--primary"
+                onClick={() => window.dispatchEvent(new CustomEvent('openShowreel'))}
+              >
+                Watch showreel
+              </button>
+              <a className="home-action" href="mailto:artur.motion@gmail.com">
+                Email Artur
+              </a>
+            </div>
           </div>
         </section>
 
@@ -220,6 +232,7 @@ export default function Home() {
           <div className="container contact-inner">
             <div className="contact-block">
               <div className="contact-items">
+                <h2 className="contact-heading">Get in touch</h2>
                 <a href="https://www.linkedin.com/in/dynamatic/" className="mini-text">linkedin</a>
                 <a href="mailto:artur.motion@gmail.com" className="mini-text">artur.motion@gmail.com</a>
                 <div className="mini-text">© Artur Kalinowski 2026</div>
