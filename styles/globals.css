@@ -145,6 +145,8 @@ a {
   line-height: 1.2;
   color: #6e6e6e;
   text-align: center;
+  /* soft dark halo keeps the grey legible where it crosses the bright rings */
+  text-shadow: 0 0 12px rgba(0,0,0,0.6);
 }
 .word-span{ display:inline-block; white-space:nowrap; }
 .char-span{ display:inline-block; }
@@ -236,7 +238,10 @@ a {
 .contact-items .mini-text{
   position:relative;
   font-size:25pt;
+  text-shadow: 0 0 12px rgba(0,0,0,0.6);
 }
+/* Links use the lighter manifesto grey; the copyright line stays dimmed */
+.contact-items a.mini-text{ color:#9f9e9f; }
 .contact-items .mini-text::after{
   content:'';
   position:absolute;

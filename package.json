@@ -1,6 +1,6 @@
 {
   "name": "motion-portfolio-onepager",
-  "version": "6.2.6",
+  "version": "6.2.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
