@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 
 export default function ShowreelOverlay({ onClose }) {
   const ref = useRef(null)
-  const videoRef = useRef(null)
   const [videoScale, setVideoScale] = useState(100)
 
   useEffect(() => {
@@ -16,8 +15,6 @@ export default function ShowreelOverlay({ onClose }) {
   }, [])
 
   useEffect(() => {
-    let ctx
-    let gsap
     const animateIn = async () => {
       const { gsap } = await import('gsap')
       const ScrollToPlugin = (await import('gsap/dist/ScrollToPlugin')).default
@@ -57,18 +54,9 @@ export default function ShowreelOverlay({ onClose }) {
         opacity: 1,
         ease: 'power2.out'
       }), needsScroll ? undefined : 0) // Start immediately if no scroll
-
-      // After overlay is visible, try to play video
-      tl.add(() => {
-        try { videoRef.current?.play?.() } catch (e) { /* autoplay may be blocked */ }
-      })
     }
 
     animateIn()
-
-    return () => {
-      if (ctx && ctx.revert) ctx.revert()
-    }
   }, [])
 
   const handleClose = async () => {
@@ -81,8 +69,6 @@ export default function ShowreelOverlay({ onClose }) {
       onComplete: () => {
         // Set visibility hidden after animation completes
         gsap.set(ref.current, { visibility: 'hidden' })
-        // pause video
-        try { videoRef.current?.pause?.() } catch (e) {}
         // notify other listeners (Menu) that the overlay closed so they can
         // update UI (e.g. unselect the Showreel button)
         try { window.dispatchEvent(new CustomEvent('closeShowreel')) } catch (err) {}
@@ -103,12 +89,10 @@ export default function ShowreelOverlay({ onClose }) {
     <div ref={ref} className="showreel-overlay" role="dialog" aria-label="Showreel overlay">
       <div className="overlay-contents">
         <div className="overlay-video-wrap">
-          <iframe 
-            ref={videoRef}
-            src="https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1" 
-            className="overlay-video" 
-           
-            frameBorder="0" 
+          <iframe
+            src="https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1"
+            className="overlay-video"
+            frameBorder="0"
             allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
             referrerPolicy="strict-origin-when-cross-origin"
             title="Showreel 2025"

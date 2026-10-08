@@ -27,7 +27,6 @@ export default function AnimatedInformation({
       try {
         gsapRef.current = (await import('gsap')).default
         setGsapLoaded(true)
-        console.log('GSAP loaded for AnimatedInformation')
       } catch (error) {
         console.error('Failed to load GSAP:', error)
       }
@@ -44,23 +43,19 @@ export default function AnimatedInformation({
   useEffect(() => {
     if (!gsapLoaded || texts.length <= 1) return
 
-    console.log('Starting animation interval')
     intervalRef.current = setInterval(() => {
       if (!animatingRef.current) {
-        console.log('Switching to next text...')
         switchToNext()
       }
     }, displayInterval)
 
     return () => {
-      console.log('Clearing animation interval')
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [gsapLoaded, texts.length, displayInterval, currentIndex]) // Added currentIndex to dependencies
 
   const switchToNext = () => {
     if (animatingRef.current || !gsapRef.current || !containerRef.current) {
-      console.log('Switch blocked - animating:', animatingRef.current, 'gsap:', !!gsapRef.current, 'container:', !!containerRef.current)
       return
     }
     
@@ -71,16 +66,11 @@ export default function AnimatedInformation({
     setCurrentIndex(prevIndex => {
       const nextIndex = (prevIndex + 1) % texts.length
       const nextText = texts[nextIndex]
-      
-      console.log(`Switching from index ${prevIndex} to ${nextIndex}`)
-      console.log(`Text changing to "${nextText}"`)
-      
+
       // Get current character spans
       const currentChars = containerRef.current.querySelectorAll('.char-span')
-      console.log('Found', currentChars.length, 'character spans')
       
       if (currentChars.length === 0) {
-        console.log('No character spans found, doing direct switch')
         setDisplayText(nextText)
         animatingRef.current = false
         return nextIndex
@@ -106,7 +96,6 @@ export default function AnimatedInformation({
       
       // Step 3: Update the text (while container is hidden)
       tl.call(() => {
-        console.log('Timeline: updating text while hidden')
         setDisplayText(nextText)
       })
       
@@ -116,7 +105,6 @@ export default function AnimatedInformation({
       // Step 5: Show container and animate new characters in
       tl.call(() => {
         const newChars = containerRef.current?.querySelectorAll('.char-span')
-        console.log('Timeline: Found', newChars?.length || 0, 'new character spans')
         
         if (newChars && newChars.length > 0) {
           // Set initial state for new characters and container
@@ -131,7 +119,6 @@ export default function AnimatedInformation({
             stagger: 0.015,
             ease: 'power2.out',
             onComplete: () => {
-              console.log('Timeline: Enter animation complete')
               animatingRef.current = false
             }
           })

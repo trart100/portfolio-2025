@@ -34,34 +34,11 @@ const manifestoParagraphs = [
 gsap.registerPlugin(ScrollTrigger)
 
 export default function Home() {
-  const containerRef = useRef(null)
   const resizeTimeout = useRef(null)
   const lastScroll = useRef(0)
   const [showOverlay, setShowOverlay] = useState(false)
 
   useEffect(() => {
-    const sections = document.querySelectorAll('.section')
-
-    sections.forEach((sec, i) => {
-      // Skip manifesto section because paragraphs have their own word-by-word animation
-      if (sec.id === 'manifesto') return
-
-      gsap.fromTo(
-        sec,
-        { opacity: 0.95 },
-        {
-          opacity: 1,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: sec,
-            start: 'top center',
-            end: 'bottom center',
-            scrub: true
-          }
-        }
-      )
-    })
-
     // remember scroll position on resize and restore after
     // Also measure title so it fills (viewport - 2 * page-margin) smoothly
     let rafId = null
@@ -135,50 +112,6 @@ export default function Home() {
       }
     }
 
-    
-
-    // Debug helper: expose a function to manually run measurement and print
-    // intermediate values so we can see why a jump happened for a specific
-    // screenshot / environment. Use from DevTools: window.__measureTitleDebug()
-    window.__measureTitleDebug = () => {
-      try {
-        const titleEl = document.querySelector('.title')
-        if (!titleEl) { console.log('no .title'); return }
-        const cs = getComputedStyle(titleEl)
-        const text = titleEl.textContent.trim()
-        const canvas = document.querySelector('#__title-measure-canvas')
-        const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null
-        const base = 100
-        let measured = 0
-        let unitWidth = 0
-        if (ctx) {
-          ctx.font = `${cs.fontWeight} ${base}px ${cs.fontFamily}`
-          measured = Math.max(1, Math.round(ctx.measureText(text).width))
-          unitWidth = measured / base
-        }
-        const pageMargin = getPageMargin()
-        const available = Math.max(0, window.innerWidth - (pageMargin * 2))
-        const rawTarget = Math.floor(available / unitWidth)
-        const clamped = Math.max(TITLE_MIN, Math.min(TITLE_MAX, rawTarget))
-        const prevRaw = getComputedStyle(document.documentElement).getPropertyValue('--title-font-size') || ''
-        const prev = parseFloat(prevRaw) || TITLE_MAX
-        const maxDelta = Math.max(1, Math.round(prev * 0.2))
-        let smoothed = clamped
-        if (Math.abs(clamped - prev) > maxDelta) smoothed = prev + Math.sign(clamped - prev) * maxDelta
-
-        console.log({ measured, unitWidth, available, rawTarget, clamped, prev, maxDelta, smoothed })
-        return { measured, unitWidth, available, rawTarget, clamped, prev, maxDelta, smoothed }
-      } catch (err) { console.error(err); return null }
-    }
-
-    window.__titleSpacing = () => {
-      const title = document.querySelector('.title')
-      if (!title) { console.log('no title'); return }
-      const r = title.getBoundingClientRect()
-      console.log('title left →', Math.round(r.left) + 'px', '| title right →', Math.round(window.innerWidth - r.right) + 'px')
-      return { left: Math.round(r.left), right: Math.round(window.innerWidth - r.right) }
-    }
-
     let lastWidth = window.innerWidth
 
     const onResize = () => {
@@ -214,22 +147,21 @@ export default function Home() {
       }, 100)
     }
 
-  window.addEventListener('resize', onResize)
-  window.addEventListener('resize', onTitleResize)  // Re-enabled horizontal scaling
+    window.addEventListener('resize', onResize)
+    window.addEventListener('resize', onTitleResize)
     window.addEventListener('openShowreel', onOpen)
     window.addEventListener('closeShowreel', onClose)
 
-  // measure initially and after fonts load
-  measureTitle()
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measureTitle())
-  setTimeout(() => measureTitle(), 15)
+    // measure initially and after fonts load
+    measureTitle()
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measureTitle())
+    setTimeout(() => measureTitle(), 15)
 
     return () => {
       window.removeEventListener('resize', onResize)
-      window.removeEventListener('resize', onTitleResize)  // Re-enabled
+      window.removeEventListener('resize', onTitleResize)
       window.removeEventListener('openShowreel', onOpen)
       window.removeEventListener('closeShowreel', onClose)
-  // no ResizeObserver to cleanup here (kept for backwards-compatibility)
       if (rafId) cancelAnimationFrame(rafId)
       try { const m = document.querySelector('#__title-measure-canvas'); if (m && m.parentNode) m.parentNode.removeChild(m) } catch(e) {}
     }
@@ -263,7 +195,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div ref={containerRef} className="page-root">
+    <div className="page-root">
       <Cursor />
       <Menu />
 

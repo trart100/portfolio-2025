@@ -4,9 +4,7 @@ const PAGE_MARGIN = 34
 const BASE_HORIZONTAL_SPACING = 68
 const BASE_VERTICAL_SPACING = 90
 const DOT_SIZE = 5
-const DOT_COLOR = '#ffffff'
-const DEBUG_GRID = true
-const DEBUG_DOT_COLOR = 'rgba(255, 255, 255, 0.2)'
+const DOT_COLOR = 'rgba(255, 255, 255, 0.2)'
 const MAX_ROTATION_DEGREES = 2
 const DEFAULT_REACTION_SPEED = 0.08
 const DEFAULT_PROXIMITY_DISTANCE = 200
@@ -14,7 +12,7 @@ const DEFAULT_SCALE_DELTA = .7
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
-function buildManualParticles(width, height, verticalScale = 1) {
+function buildDots(width, height) {
   const availableWidth = Math.max(0, width - PAGE_MARGIN * 2)
   const availableHeight = Math.max(0, height - PAGE_MARGIN * 2)
 
@@ -24,44 +22,20 @@ function buildManualParticles(width, height, verticalScale = 1) {
   const verticalIntervals = availableHeight > 0
     ? Math.max(1, Math.floor(availableHeight / BASE_VERTICAL_SPACING))
     : 1
-  const columnCount = horizontalIntervals + 1
-  const rowCount = verticalIntervals + 1
-  const horizontalSpacing = horizontalIntervals > 0 ? availableWidth / horizontalIntervals : 0
-  const verticalSpacing = verticalIntervals > 0 ? availableHeight / verticalIntervals : 0
-  const horizontalOffset = PAGE_MARGIN
-  const verticalOffset = PAGE_MARGIN
+  const horizontalSpacing = availableWidth / horizontalIntervals
+  const verticalSpacing = availableHeight / verticalIntervals
 
-  const particles = []
+  const dots = []
 
-  for (let row = 0; row < rowCount; row++) {
-    const y = verticalOffset + row * verticalSpacing
-    for (let col = 0; col < columnCount; col++) {
-      const x = horizontalOffset + col * horizontalSpacing
-      const percentX = width > 0 ? (x / width) * 100 : 0
-      const percentY = height > 0
-        ? Math.min(100, Math.max(0, ((y / height) * 100 * verticalScale)))
-        : 0
-      particles.push({
-        id: `dot-${row}-${col}`,
-        position: {
-          x: percentX,
-          y: percentY,
-          mode: 'percent'
-        },
-        pxPosition: { x, y },
-        options: {
-          size: { value: DOT_SIZE },
-          color: { value: DOT_COLOR }
-        }
-      })
+  for (let row = 0; row <= verticalIntervals; row++) {
+    const y = PAGE_MARGIN + row * verticalSpacing
+    for (let col = 0; col <= horizontalIntervals; col++) {
+      const x = PAGE_MARGIN + col * horizontalSpacing
+      dots.push({ id: `dot-${row}-${col}`, x, y })
     }
   }
 
-  if (DEBUG_GRID) {
-    // Debug flag retained for future use, but logging removed per request.
-  }
-
-  return particles
+  return dots
 }
 
 export default function DotGrid({
@@ -69,8 +43,7 @@ export default function DotGrid({
   proximityDistance = DEFAULT_PROXIMITY_DISTANCE,
   scaleDelta = DEFAULT_SCALE_DELTA
 }) {
-  const [manualParticles, setManualParticles] = useState([])
-  const verticalScale = 1
+  const [dots, setDots] = useState([])
   const containerRef = useRef(null)
   const rotationRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 })
   const dotElementsRef = useRef(new Map())
@@ -95,34 +68,32 @@ export default function DotGrid({
     if (typeof window === 'undefined') return
     let isMounted = true
 
-    const rebuildParticles = () => {
+    const rebuildDots = () => {
       if (!isMounted) return
-      const width = window.innerWidth
-      const height = window.innerHeight
-      const particles = buildManualParticles(width, height, verticalScale)
+      const nextDots = buildDots(window.innerWidth, window.innerHeight)
       const positions = new Map()
 
       scaleTargetsRef.current.clear()
       scaleCurrentRef.current.clear()
 
-      particles.forEach((dot) => {
-        positions.set(dot.id, dot.pxPosition)
+      nextDots.forEach((dot) => {
+        positions.set(dot.id, { x: dot.x, y: dot.y })
         scaleTargetsRef.current.set(dot.id, 1)
         scaleCurrentRef.current.set(dot.id, 1)
       })
 
       dotPositionsRef.current = positions
-      setManualParticles(particles)
+      setDots(nextDots)
     }
 
-    rebuildParticles()
-    window.addEventListener('resize', rebuildParticles)
+    rebuildDots()
+    window.addEventListener('resize', rebuildDots)
 
     return () => {
       isMounted = false
-      window.removeEventListener('resize', rebuildParticles)
+      window.removeEventListener('resize', rebuildDots)
     }
-  }, [verticalScale])
+  }, [])
 
   const updateScaleTargets = useCallback(() => {
     const cursor = cursorRef.current
@@ -202,62 +173,58 @@ export default function DotGrid({
   }, [reactionSpeed, resetTargets, updateRotationTargets, updateScaleTargets])
 
   return (
-    <>
-      <div
-        id="dot-grid"
-        ref={containerRef}
+    <div
+      id="dot-grid"
+      ref={containerRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0,
+        background: 'transparent',
+        pointerEvents: 'none',
+        transformStyle: 'preserve-3d',
+        willChange: 'transform'
+      }}
+    >
+      {dots.length > 0 ? (
+        <div
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            zIndex: 0,
-            background: 'transparent',
+            position: 'absolute',
+            inset: 0,
             pointerEvents: 'none',
-            transformStyle: 'preserve-3d',
-            willChange: 'transform'
+            zIndex: 9999
           }}
-      >
-        {/* tsParticles container removed; manual grid now standalone */}
-        {DEBUG_GRID && manualParticles.length > 0 ? (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              zIndex: 9999
-            }}
-          >
-            {manualParticles.map((dot) => (
-              <div
-                key={dot.id}
-                ref={(el) => {
-                  if (el) {
-                    dotElementsRef.current.set(dot.id, el)
-                  } else {
-                    dotElementsRef.current.delete(dot.id)
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  left: `${dot.pxPosition?.x || 0}px`,
-                  top: `${dot.pxPosition?.y || 0}px`,
-                  width: DOT_SIZE,
-                  height: DOT_SIZE,
-                  background: DEBUG_DOT_COLOR,
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%) scale(1)',
-                  willChange: 'transform'
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
-      {/* Vertical scale control removed per request */}
-    </>
+        >
+          {dots.map((dot) => (
+            <div
+              key={dot.id}
+              ref={(el) => {
+                if (el) {
+                  dotElementsRef.current.set(dot.id, el)
+                } else {
+                  dotElementsRef.current.delete(dot.id)
+                }
+              }}
+              style={{
+                position: 'absolute',
+                left: `${dot.x}px`,
+                top: `${dot.y}px`,
+                width: DOT_SIZE,
+                height: DOT_SIZE,
+                background: DOT_COLOR,
+                borderRadius: '50%',
+                transform: 'translate(-50%, -50%) scale(1)',
+                willChange: 'transform'
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }

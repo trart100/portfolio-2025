@@ -1,31 +1,26 @@
 import { useEffect, useState } from 'react'
 
-export default function DataProtection({ visible = true }) {
+export default function DataProtection() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasConsented, setHasConsented] = useState(null) // null = no choice, true/false = yes/no
-  const [isFirstVisit, setIsFirstVisit] = useState(true)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     // Check for existing consent choice
     const savedConsent = localStorage.getItem('datenschutz-consent')
-    const savedTimestamp = localStorage.getItem('datenschutz-timestamp')
-    
+
     if (savedConsent !== null) {
       setHasConsented(savedConsent === 'true')
-      setIsFirstVisit(false)
       setIsExpanded(false) // Collapse if user has already made a choice
     } else {
       // First visit - expand automatically
       setIsExpanded(true)
-      setIsFirstVisit(true)
     }
   }, [])
 
   const handleConsent = (consent) => {
     setHasConsented(consent)
-    setIsFirstVisit(false)
     
     // Store in localStorage
     localStorage.setItem('datenschutz-consent', consent.toString())
@@ -38,8 +33,6 @@ export default function DataProtection({ visible = true }) {
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
   }
-
-  if (!visible) return null
 
   return (
     <div className={`data-protection ${isExpanded ? 'data-protection--expanded' : ''}`} aria-hidden={!isExpanded}>

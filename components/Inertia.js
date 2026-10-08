@@ -4,29 +4,13 @@ import { useEffect } from 'react'
 // Applies to contact items and manifesto paragraphs by default.
 export default function Inertia() {
   useEffect(() => {
-    let mounted = true
     let touchStartY = 0
 
     try {
-      const contactEls = Array.from(document.querySelectorAll('.contact-items .mini-text'))
-      const paraEls = Array.from(document.querySelectorAll('.manifesto .manifesto-p'))
-  const titleEls = Array.from(document.querySelectorAll('.title, .sub-title'))
-  const showreelTextEls = Array.from(document.querySelectorAll('.overlay-close, .overlay-contents .mini-text'))
-  // add menu buttons to react to scroll as well
-  const buttonEls = Array.from(document.querySelectorAll('.menu-btn'))
-
-  const allContact = contactEls
-  const allPara = paraEls
-  const allTitle = titleEls
-  const allShowreel = showreelTextEls
-  const allButtons = buttonEls
-
-      // mark will-change once
-  allContact.forEach((el) => { el.style.willChange = 'transform' })
-  allPara.forEach((el) => { el.style.willChange = 'transform' })
-  allTitle.forEach((el) => { el.style.willChange = 'transform' })
-  allShowreel.forEach((el) => { el.style.willChange = 'transform' })
-  allButtons.forEach((el) => { el.style.willChange = 'transform' })
+      const allContact = Array.from(document.querySelectorAll('.contact-items .mini-text'))
+      const allPara = Array.from(document.querySelectorAll('.manifesto .manifesto-p'))
+      const allTitle = Array.from(document.querySelectorAll('.title'))
+      const allButtons = Array.from(document.querySelectorAll('.menu-btn'))
 
       // tuning: set uniform max and factor (user will tweak later)
       const contactMax = 300
@@ -38,18 +22,15 @@ export default function Inertia() {
       const titleMax = 300
       const titleFactor = .5
 
-      const showreelMax = 300
-      const showreelFactor = 1
+      // buttons should react subtly to scroll (smaller magnitude)
+      const buttonMax = 120
+      const buttonFactor = 0.45
 
-  // buttons should react subtly to scroll (smaller magnitude)
-  const buttonMax = 120
-  const buttonFactor = 0.45
-
-  // All elements we animate (include buttons)
-  const allEls = [...allContact, ...allPara, ...allTitle, ...allShowreel, ...allButtons]
+      const allEls = [...allContact, ...allPara, ...allTitle, ...allButtons]
 
       // per-element state
       allEls.forEach((el) => {
+        el.style.willChange = 'transform'
         el._currentY = 0
         el._targetY = 0
         el._lastActive = 0
@@ -92,14 +73,11 @@ export default function Inertia() {
         const p = Math.max(-paraMax, Math.min(paraMax, raw * paraFactor))
         allPara.forEach((el) => { el._targetY = p; el._lastActive = performance.now() })
 
-  const t = Math.max(-titleMax, Math.min(titleMax, raw * titleFactor))
-  allTitle.forEach((el) => { el._targetY = t; el._lastActive = performance.now() })
+        const t = Math.max(-titleMax, Math.min(titleMax, raw * titleFactor))
+        allTitle.forEach((el) => { el._targetY = t; el._lastActive = performance.now() })
 
-  const s = Math.max(-showreelMax, Math.min(showreelMax, raw * showreelFactor))
-  allShowreel.forEach((el) => { el._targetY = s; el._lastActive = performance.now() })
-
-  const b = Math.max(-buttonMax, Math.min(buttonMax, raw * buttonFactor))
-  allButtons.forEach((el) => { el._targetY = b; el._lastActive = performance.now() })
+        const b = Math.max(-buttonMax, Math.min(buttonMax, raw * buttonFactor))
+        allButtons.forEach((el) => { el._targetY = b; el._lastActive = performance.now() })
       }
 
       // Physics integrator: spring + damping (velocity) per element.
@@ -212,7 +190,6 @@ export default function Inertia() {
       // eslint-disable-next-line no-console
       console.error('[Inertia] init failed', err)
     }
-    return () => { mounted = false }
   }, [])
 
   return null

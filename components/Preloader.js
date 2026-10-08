@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export default function Preloader({ debugLoadTime = 0 }) {
+export default function Preloader() {
   const [progress, setProgress] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [windowLoaded, setWindowLoaded] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return undefined
-    document.documentElement.classList.add('preloader-active')
-    return undefined
-  }, [])
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined
@@ -46,16 +40,6 @@ export default function Preloader({ debugLoadTime = 0 }) {
       clearTimeout(fallback)
     }
   }, [])
-
-  // Debug override: bypass both checks after the specified delay
-  useEffect(() => {
-    if (debugLoadTime <= 0) return undefined
-    const timer = setTimeout(() => {
-      setWindowLoaded(true)
-      setVideoReady(true)
-    }, debugLoadTime)
-    return () => clearTimeout(timer)
-  }, [debugLoadTime])
 
   // Mark as fully loaded only when both signals are received
   useEffect(() => {
