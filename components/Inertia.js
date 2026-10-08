@@ -5,6 +5,8 @@ const GROUPS = [
   { selector: '.contact-items .mini-text', max: 300, factor: 1 },
   { selector: '.manifesto .manifesto-p', max: 300, factor: 1 },
   { selector: '.title', max: 300, factor: 0.5 },
+  // rotating skills line: between title and manifesto so the two hero lines separate slightly
+  { selector: '.animated-information', max: 300, factor: 0.75 },
   // buttons react subtly (smaller magnitude)
   { selector: '.menu-btn', max: 120, factor: 0.45 }
 ]
