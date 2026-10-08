@@ -23,8 +23,16 @@ npm run build    # production build check
 - `styles/globals.css` — all styles; responsive rules live at the end of the file
 - `public/assets/` — background video and favicon
 
+## Scroll echo tuning
+
+The scroll "echo" (elements nudged by scroll momentum) lives in `components/Inertia.js`;
+its defaults are `INERTIA_DEFAULTS`. Open the site with `?tune` (e.g.
+`http://localhost:3000/?tune`) for a temporary slider panel (`components/InertiaTuner.js`)
+that edits the values live, with presets and a "Copy values" button. Tuned values are kept
+in localStorage for `?tune` visits only; normal visits always use the defaults.
+
 ## Versioning
 
 The version from `package.json` is shown bottom-left next to the FPS readout. Bump it on
-every change (`npm version 6.2.X --no-git-tag-version`) and tag the commit `v6.2.X`, so a
+every change (`npm version 6.3.X --no-git-tag-version`) and tag the commit `v6.3.X`, so a
 preview or deployment can be matched to the code at a glance.
