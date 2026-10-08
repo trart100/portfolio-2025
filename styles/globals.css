@@ -200,7 +200,11 @@ a {
   display:block;
   pointer-events:none;
   object-fit:cover;
+  /* hidden until the first frame is ready (VideoVisual adds .is-ready) */
+  opacity:0;
+  transition:opacity 600ms ease;
 }
+.video-visual video.is-ready{ opacity:0.8; }
 
 /* Manifesto */
 .manifesto{ padding:80px 0 240px 0; }
@@ -788,7 +792,8 @@ button, input[type="button"]{
 }
 
 /* Reduced motion (OS setting): manifesto words appear without the reveal,
-   preloader rings stop pulsing. The rotating line is handled in AnimatedInformation. */
+   preloader rings stop pulsing, the background video appears without fading.
+   The rotating line is handled in AnimatedInformation. */
 @media (prefers-reduced-motion: reduce){
   .ap-word{
     transform: none !important;
@@ -796,4 +801,5 @@ button, input[type="button"]{
     visibility: visible !important;
   }
   .preloader-circle{ animation: none; }
+  .video-visual video{ transition: none; }
 }

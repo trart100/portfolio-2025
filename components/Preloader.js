@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
+// Longest the preloader may hold the page, whatever is still loading.
+// The background video fades in on its own once it has a frame (VideoVisual).
+const MAX_WAIT_MS = 3500
+// Counter value reached at MAX_WAIT_MS; it jumps to 100 when loading finishes
+const PROGRESS_CEILING = 95
+
 export default function Preloader() {
   const progressRef = useRef(0)
   const labelRef = useRef(null)
@@ -31,15 +37,17 @@ export default function Preloader() {
     return () => window.removeEventListener('load', handleLoad)
   }, [])
 
-  // Track background video readiness, with an 8s safety fallback
+  // Track background video readiness
   useEffect(() => {
     const handleVideoReady = () => setVideoReady(true)
     window.addEventListener('videoCanPlay', handleVideoReady, { once: true })
-    const fallback = setTimeout(() => setVideoReady(true), 8000)
-    return () => {
-      window.removeEventListener('videoCanPlay', handleVideoReady)
-      clearTimeout(fallback)
-    }
+    return () => window.removeEventListener('videoCanPlay', handleVideoReady)
+  }, [])
+
+  // Overall time limit (covers both window.load and the video)
+  useEffect(() => {
+    const cap = setTimeout(() => setIsLoaded(true), MAX_WAIT_MS)
+    return () => clearTimeout(cap)
   }, [])
 
   // Mark as fully loaded only when both signals are received
@@ -47,8 +55,8 @@ export default function Preloader() {
     if (windowLoaded && videoReady) setIsLoaded(true)
   }, [windowLoaded, videoReady])
 
-  // Fake progress creeps toward 99 until loaded, then jumps to 100.
-  // Written straight to the DOM so React doesn't re-render every frame.
+  // Time-based progress: eases toward PROGRESS_CEILING over MAX_WAIT_MS, then jumps
+  // to 100 once loaded. Written straight to the DOM so React doesn't re-render every frame.
   useEffect(() => {
     let rafId = null
     let shown = ''
@@ -67,11 +75,12 @@ export default function Preloader() {
       return undefined
     }
 
+    const start = performance.now()
     const step = () => {
-      const drift = 0.25 + Math.random() * 0.25
-      progressRef.current = Math.min(99, progressRef.current + drift)
+      const t = Math.min(1, (performance.now() - start) / MAX_WAIT_MS)
+      progressRef.current = PROGRESS_CEILING * (1 - (1 - t) * (1 - t))
       write()
-      rafId = requestAnimationFrame(step)
+      rafId = t < 1 ? requestAnimationFrame(step) : null
     }
 
     rafId = requestAnimationFrame(step)

@@ -72,18 +72,24 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     const video = videoRef.current
     if (!video) return undefined
 
+    // Tells the Preloader the video can play (HAVE_FUTURE_DATA)
     const handleCanPlay = () => {
       window.dispatchEvent(new CustomEvent('videoCanPlay'))
     }
+    // Fade in (CSS) once the first frame exists (HAVE_CURRENT_DATA), so a slow
+    // video never pops in after the preloader has already gone
+    const reveal = () => video.classList.add('is-ready')
 
-    // Video may already be ready (readyState HAVE_FUTURE_DATA or higher)
-    if (video.readyState >= 3) {
-      handleCanPlay()
-      return undefined
+    if (video.readyState >= 2) reveal()
+    else video.addEventListener('loadeddata', reveal, { once: true })
+
+    if (video.readyState >= 3) handleCanPlay()
+    else video.addEventListener('canplay', handleCanPlay, { once: true })
+
+    return () => {
+      video.removeEventListener('loadeddata', reveal)
+      video.removeEventListener('canplay', handleCanPlay)
     }
-
-    video.addEventListener('canplay', handleCanPlay, { once: true })
-    return () => video.removeEventListener('canplay', handleCanPlay)
   }, [])
 
   return (
@@ -94,7 +100,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
         autoPlay
         muted
         loop
-        style={{ pointerEvents: 'none', opacity: 0.8 }}
+        style={{ pointerEvents: 'none' }}
       >
         <source src="/assets/video_visual_for_website_1.mp4" type="video/mp4" />
       </video>
