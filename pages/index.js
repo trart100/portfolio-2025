@@ -12,21 +12,21 @@ import AnimatedInformation from '../components/AnimatedInformation'
 
 const manifestoParagraphs = [
   {
-    text: 'Meaning begins at the origin and settles at the destination. As a motion designer, I work on what happens in between: the pacing, the transitions, the moment an idea becomes clear. I start with the problem, the audience, and the context, because context decides every frame. Then I build motion that explains, sells, or simply makes people stop scrolling.',
+    text: 'Meaning begins at the origin and settles at the destination. As a motion designer, I work on what happens in between: the pacing, the transitions, the moment an idea becomes clear. I start with the message, the audience, and the context, because context decides every frame. Then I build motion that explains, sells, or simply makes people stop scrolling.',
     highlights: ['Meaning', 'Motion designer', 'Pacing', 'Context']
   },
   {
     text: 'My work spans brand identities, campaigns, product UI, and social content, from the first storyboard to the final mix. I animate and edit in After Effects, Cinema 4D, Blender, Premiere, and Figma, build coded JavaScript animations for the web, design sound, and automate pipelines when work needs to move faster. One person who can carry a piece from concept to delivery without losing the thread.',
     // Highlights match single words anywhere in the paragraph, so avoid filler words like "to"
-    highlights: ['Brand identities', 'Campaigns', 'Product UI', 'Coded JavaScript animations', 'Concept', 'Delivery']
+    highlights: ['Brand identities', 'Campaigns', 'Product UI', 'Concept', 'Delivery']
   },
   {
-    text: 'In a team, I care about clarity as much as craft. I have led teams and mentored designers, so I know how briefs, feedback, and deadlines shape the result. Time, budget, and skills set the limits; context sets the intention. Working inside that balance, calmly and on schedule, is where I do my best work.',
-    highlights: ['Team', 'Mentored', 'Clarity', 'Craft']
+    text: 'Good motion depends on clear communication as much as on craft. Leading teams and mentoring designers taught me how much a precise brief, honest feedback, and a realistic deadline shape the final piece. Time, budget, and skills set the limits; context sets the intention. Working inside that balance and delivering on schedule is where I do my best work.',
+    highlights: ['Communication', 'Craft', 'Leading', 'Mentoring']
   },
   {
-    text: "Tools change fast. I use machine learning and AI generation where they help, but they do not define meaning: values, direction, and responsibility stay with the designer. If your story needs to move, let's talk.",
-    highlights: ['Meaning', 'Responsibility', "Let's talk"]
+    text: "Tools change fast, and machine learning and AI generation are now part of my workflow. They speed up exploration, but they do not define meaning: the values, direction, and responsibility behind every frame stay with the designer, and that is what I bring to every project. If your story needs to move, let's talk.",
+    highlights: ['Meaning', 'Values', 'Responsibility', "Let's talk"]
   }
 ]
 
