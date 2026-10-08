@@ -1,15 +1,34 @@
 import { useEffect } from 'react'
 
-// Elements nudged by scroll momentum. max = clamp in px, factor = share of the scroll delta.
-const GROUPS = [
-  { selector: '.contact-items .mini-text', max: 300, factor: 1 },
-  { selector: '.manifesto .manifesto-p', max: 300, factor: 1 },
-  { selector: '.title', max: 300, factor: 0.5 },
-  // rotating skills line: between title and manifesto so the two hero lines separate slightly
-  { selector: '.animated-information', max: 300, factor: 0.75 },
-  // buttons react subtly (smaller magnitude)
-  { selector: '.menu-btn', max: 120, factor: 0.45 }
+// Elements nudged by scroll momentum (tunable values live in INERTIA_DEFAULTS)
+export const INERTIA_GROUPS = [
+  { key: 'contact', label: 'Contact lines', selector: '.contact-items .mini-text' },
+  { key: 'manifesto', label: 'Manifesto', selector: '.manifesto .manifesto-p' },
+  { key: 'title', label: 'Title', selector: '.title' },
+  { key: 'skills', label: 'Skills line', selector: '.animated-information' },
+  { key: 'menu', label: 'Menu buttons', selector: '.menu-btn' }
 ]
+
+// spring = stiffness toward the target; friction = share of velocity kept per frame
+// (higher = floatier, more overshoot); "in" = pushed by scroll, "out" = returning to rest.
+// Per group: factor = share of the scroll delta, max = clamp in px.
+export const INERTIA_DEFAULTS = {
+  inSpring: 0.01,
+  inFriction: 0.9,
+  outSpring: 0.01,
+  outFriction: 0.9,
+  idleMs: 120, // ms without scroll input before elements start returning
+  contact: { factor: 1, max: 300 },
+  manifesto: { factor: 1, max: 300 },
+  title: { factor: 0.5, max: 300 },
+  // between title and manifesto so the two hero lines separate slightly
+  skills: { factor: 0.75, max: 300 },
+  // buttons react subtly (smaller magnitude)
+  menu: { factor: 0.45, max: 120 }
+}
+
+// Live values, read every frame (the ?tune panel in InertiaTuner edits them)
+export const inertiaParams = JSON.parse(JSON.stringify(INERTIA_DEFAULTS))
 
 // Generic inertia: elements react to scroll with a subtle inertia/momentum effect
 export default function Inertia() {
@@ -17,7 +36,7 @@ export default function Inertia() {
     let touchStartY = 0
 
     try {
-      const groups = GROUPS.map((g) => ({ ...g, els: Array.from(document.querySelectorAll(g.selector)) }))
+      const groups = INERTIA_GROUPS.map((g) => ({ ...g, els: Array.from(document.querySelectorAll(g.selector)) }))
       const allEls = groups.flatMap((g) => g.els)
 
       // per-element state
@@ -31,7 +50,8 @@ export default function Inertia() {
       const applyShift = (deltaY) => {
         const raw = -deltaY
         const now = performance.now()
-        groups.forEach(({ els, max, factor }) => {
+        groups.forEach(({ key, els }) => {
+          const { max, factor } = inertiaParams[key]
           const shift = Math.max(-max, Math.min(max, raw * factor))
           els.forEach((el) => { el._targetY = shift; el._lastActive = now })
         })
@@ -55,11 +75,6 @@ export default function Inertia() {
       // Physics integrator: spring + damping (velocity) per element.
       // This produces a more organic motion than a simple lerp.
       let rafLoop = null
-      const IN_SPRING = 0.01 // spring stiffness when moving into a larger target
-      const IN_FRICTION = 0.9 // damping when moving into a larger target
-      const OUT_SPRING = 0.01 // spring stiffness when decaying back to zero
-      const OUT_FRICTION = 0.9 // damping when decaying back to zero
-      const INACTIVE_TO_ZERO_MS = 120 // ms of inactivity before nudging target to 0
       const ZERO_THRESHOLD = 0.05 // px threshold under which we snap to 0
 
       let prevTime = performance.now()
@@ -68,11 +83,12 @@ export default function Inertia() {
         const dt = elapsed / 16.6667 // ~1 at 60fps
         prevTime = now
         let active = false
+        const p = inertiaParams
 
         for (let i = 0; i < allEls.length; i++) {
           const el = allEls[i]
           // if not recently updated, nudge its target to 0 so it decays
-          if (now - (el._lastActive || 0) > INACTIVE_TO_ZERO_MS) el._targetY = 0
+          if (now - (el._lastActive || 0) > p.idleMs) el._targetY = 0
 
           const cur = el._currentY || 0
           const tgt = el._targetY || 0
@@ -80,8 +96,8 @@ export default function Inertia() {
           // pick physics params based on whether element is moving into a
           // larger target (enter) or decaying back (exit)
           const entering = Math.abs(tgt) > Math.abs(cur)
-          const spring = entering ? IN_SPRING : OUT_SPRING
-          const friction = entering ? IN_FRICTION : OUT_FRICTION
+          const spring = entering ? p.inSpring : p.outSpring
+          const friction = entering ? p.inFriction : p.outFriction
 
           // integrate velocity: v += (target - pos) * spring * dt; v *= friction^dt; pos += v * dt
           el._velY = (el._velY || 0) + (tgt - cur) * spring * dt

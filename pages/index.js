@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import VideoVisual from '../components/VideoVisual'
 import Inertia from '../components/Inertia'
+import InertiaTuner from '../components/InertiaTuner'
 import Cursor from '../components/Cursor'
 import Menu from '../components/Menu'
 import ShowreelOverlay from '../components/ShowreelOverlay'
@@ -234,6 +235,8 @@ export default function Home() {
 
       {showOverlay && <ShowreelOverlay onClose={() => setShowOverlay(false)} />}
       <Inertia />
+      {/* temporary: scroll echo tuning panel, only shown with ?tune */}
+      <InertiaTuner />
     </div>
   )
 }
