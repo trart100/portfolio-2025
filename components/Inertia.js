@@ -13,11 +13,11 @@ export const INERTIA_GROUPS = [
 // (higher = floatier, more overshoot); "in" = pushed by scroll, "out" = returning to rest.
 // Per group: factor = share of the scroll delta, max = clamp in px.
 export const INERTIA_DEFAULTS = {
-  inSpring: 0.01,
-  inFriction: 0.9,
-  outSpring: 0.01,
-  outFriction: 0.9,
-  idleMs: 120, // ms without scroll input before elements start returning
+  inSpring: 0.08,
+  inFriction: 0.75,
+  outSpring: 0.06,
+  outFriction: 0.78,
+  idleMs: 80, // ms without scroll input before elements start returning
   contact: { factor: 1, max: 300 },
   manifesto: { factor: 1, max: 300 },
   title: { factor: 0.5, max: 300 },

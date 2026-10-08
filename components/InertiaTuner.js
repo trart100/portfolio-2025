@@ -14,10 +14,11 @@ const PHYSICS = [
   { key: 'idleMs', label: 'Return delay ms', min: 0, max: 600, step: 10 }
 ]
 
-// Starting points; they only change the physics rows, not the per-group values
+// Starting points; they only change the physics rows, not the per-group values.
+// Default = INERTIA_DEFAULTS (snappy); Slow = the original soft echo.
 const PRESETS = {
-  Current: {},
-  Snappy: { inSpring: 0.08, inFriction: 0.75, outSpring: 0.06, outFriction: 0.78, idleMs: 80 },
+  Default: {},
+  'Slow (old)': { inSpring: 0.01, inFriction: 0.9, outSpring: 0.01, outFriction: 0.9, idleMs: 120 },
   Bouncy: { inSpring: 0.05, inFriction: 0.88, outSpring: 0.04, outFriction: 0.88, idleMs: 100 }
 }
 const PHYSICS_DEFAULTS = Object.fromEntries(PHYSICS.map(({ key }) => [key, INERTIA_DEFAULTS[key]]))
