@@ -24,6 +24,8 @@ export default function ShowreelOverlay({ onClose }) {
 
   useEffect(() => {
     const root = document.documentElement
+    // Focus returns here (the Showreel button) when the overlay closes
+    const opener = document.activeElement
     const currentScrollY = window.scrollY || root.scrollTop || 0
     const needsScroll = currentScrollY > 100 // Only scroll if more than 100px down
 
@@ -66,6 +68,9 @@ export default function ShowreelOverlay({ onClose }) {
     return () => {
       tl.kill()
       document.documentElement.classList.remove(OPEN_CLASS, LOCK_CLASS)
+      if (opener && opener !== document.body && typeof opener.focus === 'function' && document.contains(opener)) {
+        opener.focus({ preventScroll: true })
+      }
     }
   }, [])
 
@@ -116,7 +121,7 @@ export default function ShowreelOverlay({ onClose }) {
   }
 
   return (
-    <div ref={ref} className="showreel-overlay" role="dialog" aria-label="Showreel overlay">
+    <div ref={ref} className="showreel-overlay" role="dialog" aria-modal="true" aria-label="Showreel overlay">
       <div className="overlay-contents">
         <div className="overlay-video-wrap">
           <iframe

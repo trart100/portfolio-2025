@@ -84,6 +84,12 @@ a {
   text-decoration: none;
 }
 
+/* Keyboard focus only (mouse/touch clicks don't trigger :focus-visible) */
+:focus-visible{
+  outline: 1px solid var(--accent-stroke);
+  outline-offset: 4px;
+}
+
 .page-root{ min-height:100%; width:100%; overflow-x:hidden; }
 .page-content{ width:100%; position:relative; z-index:1; }
 
@@ -628,6 +634,11 @@ button, input[type="button"]{
   background:rgba(255,255,255,0.1);
   border-radius:8px;
 }
+/* The box clips overflow, so draw the focus ring inside it */
+.data-protection-header:focus-visible{
+  outline-offset:-2px;
+  border-radius:8px;
+}
 
 .data-protection-label{
   font-weight:700;
@@ -781,4 +792,15 @@ button, input[type="button"]{
   .title{ font-size: 35pt; }
   .video-visual{ height: 125em }
   .main-text{ font-size: 20px; line-height: 40px; }
+}
+
+/* Reduced motion (OS setting): manifesto words appear without the reveal,
+   preloader rings stop pulsing. The rotating line is handled in AnimatedInformation. */
+@media (prefers-reduced-motion: reduce){
+  .ap-word{
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .preloader-circle{ animation: none; }
 }

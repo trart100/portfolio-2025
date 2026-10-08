@@ -9,6 +9,9 @@ const defaultTexts = [
   'Team leading / Mentoring'
 ]
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 export default function AnimatedInformation({
   texts = defaultTexts,
   displayInterval = 3000
@@ -38,11 +41,13 @@ export default function AnimatedInformation({
   useEffect(() => {
     if (texts.length <= 1) return
 
+    // Reduced motion: each line stays twice as long
+    const interval = prefersReducedMotion() ? displayInterval * 2 : displayInterval
     intervalRef.current = setInterval(() => {
       if (!animatingRef.current && visibleRef.current) {
         switchToNext()
       }
-    }, displayInterval)
+    }, interval)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -70,15 +75,20 @@ export default function AnimatedInformation({
         return nextIndex
       }
 
+      // Reduced motion: plain fade, no vertical travel or per-letter stagger
+      const reduced = prefersReducedMotion()
+      const shift = reduced ? 0 : 20
+      const stagger = reduced ? 0 : 0.015
+
       // Create a timeline for proper sequencing
       const tl = gsap.timeline()
       
       // Step 1: Animate characters out (with full completion)
       tl.to(currentChars, {
-        y: -20,
+        y: -shift,
         opacity: 0,
         duration: 0.4,
-        stagger: 0.015,
+        stagger,
         ease: 'power2.in'
       })
       
@@ -102,7 +112,7 @@ export default function AnimatedInformation({
         
         if (newChars && newChars.length > 0) {
           // Set initial state for new characters and container
-          gsap.set(newChars, { y: 20, opacity: 0 })
+          gsap.set(newChars, { y: shift, opacity: 0 })
           gsap.set(containerRef.current, { opacity: 1 })
           
           // Animate new characters in
@@ -110,7 +120,7 @@ export default function AnimatedInformation({
             y: 0,
             opacity: 1,
             duration: 0.4,
-            stagger: 0.015,
+            stagger,
             ease: 'power2.out',
             onComplete: () => {
               animatingRef.current = false

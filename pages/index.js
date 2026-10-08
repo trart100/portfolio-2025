@@ -207,6 +207,7 @@ export default function Home() {
         </section>
 
         <section className="section manifesto" id="manifesto">
+          <h2 className="sr-only">Manifesto</h2>
           <div className="container manifesto-inner">
             {manifestoParagraphs.map(({ text, highlights }, index) => (
               <AnimatedParagraph key={index} highlights={highlights}>
@@ -217,6 +218,7 @@ export default function Home() {
         </section>
 
         <section className="section contact" id="contact">
+          <h2 className="sr-only">Contact</h2>
           <div className="container contact-inner">
             <div className="contact-block">
               <div className="contact-items">
