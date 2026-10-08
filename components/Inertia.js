@@ -1,32 +1,22 @@
 import { useEffect } from 'react'
 
+// Elements nudged by scroll momentum. max = clamp in px, factor = share of the scroll delta.
+const GROUPS = [
+  { selector: '.contact-items .mini-text', max: 300, factor: 1 },
+  { selector: '.manifesto .manifesto-p', max: 300, factor: 1 },
+  { selector: '.title', max: 300, factor: 0.5 },
+  // buttons react subtly (smaller magnitude)
+  { selector: '.menu-btn', max: 120, factor: 0.45 }
+]
+
 // Generic inertia: elements react to scroll with a subtle inertia/momentum effect
-// Applies to contact items and manifesto paragraphs by default.
 export default function Inertia() {
   useEffect(() => {
     let touchStartY = 0
 
     try {
-      const allContact = Array.from(document.querySelectorAll('.contact-items .mini-text'))
-      const allPara = Array.from(document.querySelectorAll('.manifesto .manifesto-p'))
-      const allTitle = Array.from(document.querySelectorAll('.title'))
-      const allButtons = Array.from(document.querySelectorAll('.menu-btn'))
-
-      // tuning: set uniform max and factor (user will tweak later)
-      const contactMax = 300
-      const contactFactor = 1
-
-      const paraMax = 300
-      const paraFactor = 1
-
-      const titleMax = 300
-      const titleFactor = .5
-
-      // buttons should react subtly to scroll (smaller magnitude)
-      const buttonMax = 120
-      const buttonFactor = 0.45
-
-      const allEls = [...allContact, ...allPara, ...allTitle, ...allButtons]
+      const groups = GROUPS.map((g) => ({ ...g, els: Array.from(document.querySelectorAll(g.selector)) }))
+      const allEls = groups.flatMap((g) => g.els)
 
       // per-element state
       allEls.forEach((el) => {
@@ -36,48 +26,27 @@ export default function Inertia() {
         el._lastActive = 0
       })
 
-      // Coalescing vars for wheel/touch to avoid firing applyShift too many times
-      let wheelPending = 0
-      let wheelRaf = null
-      let touchPending = 0
-      let touchRaf = null
-
-      const scheduleWheel = (delta) => {
-        wheelPending += delta
-        if (wheelRaf == null) {
-          wheelRaf = requestAnimationFrame(() => {
-            applyShift(wheelPending)
-            wheelPending = 0
-            wheelRaf = null
-          })
-        }
-      }
-
-      const scheduleTouch = (delta) => {
-        touchPending += delta
-        if (touchRaf == null) {
-          touchRaf = requestAnimationFrame(() => {
-            applyShift(touchPending)
-            touchPending = 0
-            touchRaf = null
-          })
-        }
-      }
-
       const applyShift = (deltaY) => {
         const raw = -deltaY
+        const now = performance.now()
+        groups.forEach(({ els, max, factor }) => {
+          const shift = Math.max(-max, Math.min(max, raw * factor))
+          els.forEach((el) => { el._targetY = shift; el._lastActive = now })
+        })
+      }
 
-        const c = Math.max(-contactMax, Math.min(contactMax, raw * contactFactor))
-        allContact.forEach((el) => { el._targetY = c; el._lastActive = performance.now() })
-
-        const p = Math.max(-paraMax, Math.min(paraMax, raw * paraFactor))
-        allPara.forEach((el) => { el._targetY = p; el._lastActive = performance.now() })
-
-        const t = Math.max(-titleMax, Math.min(titleMax, raw * titleFactor))
-        allTitle.forEach((el) => { el._targetY = t; el._lastActive = performance.now() })
-
-        const b = Math.max(-buttonMax, Math.min(buttonMax, raw * buttonFactor))
-        allButtons.forEach((el) => { el._targetY = b; el._lastActive = performance.now() })
+      // Coalesce wheel/touch deltas into one applyShift per frame
+      let pendingDelta = 0
+      let inputRaf = null
+      const scheduleShift = (delta) => {
+        pendingDelta += delta
+        if (inputRaf == null) {
+          inputRaf = requestAnimationFrame(() => {
+            applyShift(pendingDelta)
+            pendingDelta = 0
+            inputRaf = null
+          })
+        }
       }
 
       // Physics integrator: spring + damping (velocity) per element.
@@ -135,7 +104,7 @@ export default function Inertia() {
       rafLoop = requestAnimationFrame(loop)
 
       // Wheel handler (user scroll)
-      const onWheel = (e) => { scheduleWheel(e.deltaY) }
+      const onWheel = (e) => { scheduleShift(e.deltaY) }
 
       // Touch handlers
       const onTouchStart = (e) => { touchStartY = e.touches ? e.touches[0].clientY : e.clientY }
@@ -143,7 +112,7 @@ export default function Inertia() {
         const y = e.touches ? e.touches[0].clientY : e.clientY
         const delta = touchStartY - y
         touchStartY = y
-        scheduleTouch(delta)
+        scheduleShift(delta)
       }
 
       // Scroll handler (programmatic scrolls & ScrollTrigger scrubs) — already rAF coalesced
@@ -182,8 +151,7 @@ export default function Inertia() {
         window.removeEventListener('touchmove', onTouchMove)
         window.removeEventListener('scroll', onScroll)
         if (rafId != null) cancelAnimationFrame(rafId)
-        if (wheelRaf != null) cancelAnimationFrame(wheelRaf)
-        if (touchRaf != null) cancelAnimationFrame(touchRaf)
+        if (inputRaf != null) cancelAnimationFrame(inputRaf)
         if (rafLoop != null) cancelAnimationFrame(rafLoop)
       }
     } catch (err) {

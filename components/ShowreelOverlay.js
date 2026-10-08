@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { gsap } from '../lib/gsap'
 
 export default function ShowreelOverlay({ onClose }) {
   const ref = useRef(null)
@@ -9,69 +10,54 @@ export default function ShowreelOverlay({ onClose }) {
     const handleResize = () => {
       setVideoScale(100)
     }
-    
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
-    const animateIn = async () => {
-      const { gsap } = await import('gsap')
-      const ScrollToPlugin = (await import('gsap/dist/ScrollToPlugin')).default
-      gsap.registerPlugin(ScrollToPlugin)
+    const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0
+    const needsScroll = currentScrollY > 100 // Only scroll if more than 100px down
 
-      // Check current scroll position
-      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0
-      const needsScroll = currentScrollY > 100 // Only scroll if more than 100px down
+    // Immediately set overlay to visible but transparent for smoother transition
+    gsap.set(ref.current, {
+      opacity: 0,
+      visibility: 'visible',
+      scale: 1,
+      background: '#000'
+    })
 
-      // Immediately set overlay to visible but transparent for smoother transition
-      gsap.set(ref.current, { 
-        opacity: 0, 
-        visibility: 'visible',
-        scale: 1,
-        background: '#000' // Ensure solid black background 
-      })
+    const tl = gsap.timeline()
 
-      // Create timeline for sequence
-      const tl = gsap.timeline()
-
-      // Only add scroll animation if needed
-      if (needsScroll) {
-        // Calculate dynamic duration based on scroll distance
-        const scrollDistance = currentScrollY
-        const dynamicDuration = Math.min(Math.max(scrollDistance / 1200, 0.3), 1.5)
-        
-        tl.add(gsap.to(window, {
-          duration: dynamicDuration,
-          scrollTo: { y: 0, autoKill: false },
-          ease: 'power2.inOut'
-        }))
-      }
-
-      // Then fade in overlay (immediate if no scroll needed)
-      tl.add(gsap.to(ref.current, {
-        duration: 0.6,
-        opacity: 1,
-        ease: 'power2.out'
-      }), needsScroll ? undefined : 0) // Start immediately if no scroll
+    if (needsScroll) {
+      // Scroll back to top first; duration scales with distance
+      const dynamicDuration = Math.min(Math.max(currentScrollY / 1200, 0.3), 1.5)
+      tl.add(gsap.to(window, {
+        duration: dynamicDuration,
+        scrollTo: { y: 0, autoKill: false },
+        ease: 'power2.inOut'
+      }))
     }
 
-    animateIn()
+    // Then fade in overlay (immediate if no scroll needed)
+    tl.add(gsap.to(ref.current, {
+      duration: 0.6,
+      opacity: 1,
+      ease: 'power2.out'
+    }), needsScroll ? undefined : 0)
+
+    return () => tl.kill()
   }, [])
 
-  const handleClose = async () => {
-    const mod = await import('gsap')
-    const gsap = mod.gsap || mod.default || mod
+  const handleClose = () => {
     gsap.to(ref.current, {
       duration: 0.45,
       opacity: 0,
       ease: 'power2.inOut',
       onComplete: () => {
-        // Set visibility hidden after animation completes
         gsap.set(ref.current, { visibility: 'hidden' })
-        // notify other listeners (Menu) that the overlay closed so they can
-        // update UI (e.g. unselect the Showreel button)
-        try { window.dispatchEvent(new CustomEvent('closeShowreel')) } catch (err) {}
+        // notify other listeners (Menu) so they can unselect the Showreel button
+        window.dispatchEvent(new CustomEvent('closeShowreel'))
         if (typeof onClose === 'function') onClose()
       }
     })

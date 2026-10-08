@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { gsap } from '../lib/gsap'
 
 const defaultTexts = [
   'Motion Design / Animation / Editing / SFX / Automation / Code',
@@ -8,40 +9,24 @@ const defaultTexts = [
   'Team leading / Mentoring'
 ]
 
-export default function AnimatedInformation({ 
+export default function AnimatedInformation({
   texts = defaultTexts,
-  switchDuration = 0.8,
   displayInterval = 3000
 }) {
   const containerRef = useRef(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [displayText, setDisplayText] = useState(texts[0] || '')
-  const [gsapLoaded, setGsapLoaded] = useState(false)
   const intervalRef = useRef(null)
   const animatingRef = useRef(false)
-  const gsapRef = useRef(null)
-
-  // Initialize GSAP
-  useEffect(() => {
-    const initGsap = async () => {
-      try {
-        gsapRef.current = (await import('gsap')).default
-        setGsapLoaded(true)
-      } catch (error) {
-        console.error('Failed to load GSAP:', error)
-      }
-    }
-    initGsap()
-  }, [])
 
   // Initialize display text
   useEffect(() => {
     setDisplayText(texts[0] || '')
   }, [texts])
 
-  // Set up the cycling interval ONLY after GSAP is loaded
+  // Restarting the interval on each index change keeps the cadence anchored to the last switch
   useEffect(() => {
-    if (!gsapLoaded || texts.length <= 1) return
+    if (texts.length <= 1) return
 
     intervalRef.current = setInterval(() => {
       if (!animatingRef.current) {
@@ -52,16 +37,15 @@ export default function AnimatedInformation({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [gsapLoaded, texts.length, displayInterval, currentIndex]) // Added currentIndex to dependencies
+  }, [texts.length, displayInterval, currentIndex])
 
   const switchToNext = () => {
-    if (animatingRef.current || !gsapRef.current || !containerRef.current) {
+    if (animatingRef.current || !containerRef.current) {
       return
     }
-    
+
     animatingRef.current = true
-    const gsap = gsapRef.current
-    
+
     // Get the CURRENT index from state at the time of execution
     setCurrentIndex(prevIndex => {
       const nextIndex = (prevIndex + 1) % texts.length
@@ -135,27 +119,11 @@ export default function AnimatedInformation({
   const characters = displayText.split('')
 
   return (
-    <div 
-      ref={containerRef}
-      className="animated-information"
-      style={{
-        marginTop: '100px', // Space after title
-        fontSize: '25pt',
-        color: '#6e6e6e',
-        textAlign: 'center',
-        lineHeight: '1.2',
-        marginLeft: '34px',
-        marginRight: '34px'
-      }}
-    >
+    <div ref={containerRef} className="animated-information">
       {characters.map((char, index) => (
         <span
           key={`${currentIndex}-${index}`}
-          className="char-span"
-          style={{
-            display: 'inline-block',
-            whiteSpace: char === ' ' ? 'pre' : 'normal'
-          }}
+          className={char === ' ' ? 'char-span char-span--space' : 'char-span'}
         >
           {char}
         </span>

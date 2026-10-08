@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import VideoVisual from '../components/VideoVisual'
 import Inertia from '../components/Inertia'
 import Cursor from '../components/Cursor'
@@ -29,9 +27,6 @@ const manifestoParagraphs = [
     highlights: ['Unstable', 'Defining', 'Human perspective', 'Meaning', 'Values', 'Responsibility', 'Creation', 'Tension', 'human']
   }
 ]
-
-
-gsap.registerPlugin(ScrollTrigger)
 
 export default function Home() {
   const resizeTimeout = useRef(null)
@@ -207,10 +202,7 @@ export default function Home() {
               <VideoVisual />
             </div>
             <h1 className="title">Artur Kalinowski</h1>
-            <AnimatedInformation 
-              switchDuration={0.8}
-              displayInterval={1000}
-            />
+            <AnimatedInformation displayInterval={1000} />
           </div>
         </section>
 
