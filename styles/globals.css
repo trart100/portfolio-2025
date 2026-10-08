@@ -1,10 +1,12 @@
+/* Type and spacing follow a golden-ratio (Fibonacci) scale:
+   8 · 13 · 21 · 34 · 55 · 89 · 144 · 233 (each step ≈ previous × 1.618) */
 :root{
   --page-margin: 34px;
   --accent-stroke: #eccfab;
   /* cursor sizing: large matches menu button height; medium = 90%, small = 80% */
   --cursor-large: 92px;
   /* menu/button font sizing (cursor plus should match this) */
-  --menu-btn-font-size: 25pt;
+  --menu-btn-font-size: 34px;
   --menu-btn-width: 278px;
   --menu-btn-height: 92px;
 }
@@ -52,7 +54,7 @@
   justify-content:center;
   font-family: 'Space Grotesk', sans-serif;
   font-weight:300;
-  font-size:12.5pt;
+  font-size:21px;
   color:#6e6e6e;
   letter-spacing:1px;
   text-shadow:0 0 12px rgba(0,0,0,0.45);
@@ -125,7 +127,7 @@ a {
   display: block;
   width: calc(100vw - (var(--page-margin) * 2));
   box-sizing: border-box;
-  margin: 24px var(--page-margin) 0 var(--page-margin);
+  margin: 21px var(--page-margin) 0 var(--page-margin);
   text-align: center;
   white-space: nowrap; /* never allow title to wrap to multiple lines */
   overflow: hidden;
@@ -139,9 +141,9 @@ a {
 
 /* Rotating skills line under the title */
 .animated-information{
-  margin: 100px 34px 8px;
+  margin: 89px 34px 8px;
   height: 4.2em; /* fixed height prevents layout jumps between lines */
-  font-size: 25pt;
+  font-size: 34px;
   line-height: 1.2;
   color: #6e6e6e;
   text-align: center;
@@ -166,9 +168,9 @@ a {
 
 .main-text{
   font-family: 'Space Grotesk', sans-serif;
-  font-weight:100;
-  font-size:40px;
-  line-height: 78px;
+  font-weight:300; /* lightest weight loaded for Space Grotesk (_document.js) */
+  font-size:34px;
+  line-height:1.618;
   color:#9f9e9f;
 }
 
@@ -207,15 +209,19 @@ a {
 .video-visual video.is-ready{ opacity:0.8; }
 
 /* Manifesto */
-.manifesto{ padding:80px 0 240px 0; }
-.manifesto-inner{ display:flex; flex-direction:column; gap:96px; }
+.manifesto{ padding:89px 0 233px 0; }
+.manifesto-inner{ display:flex; flex-direction:column; gap:89px; }
 .manifesto-p{
-  margin:0;
+  /* capped and centered so lines stay around 60 characters */
+  box-sizing:border-box;
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
   /* translucent panel so the video visual behind is visible and blurred */
   background: rgba(0,0,0,.9);
   border: 0px solid rgba(255,255,255,0.06);
   border-radius: 50px;
-  padding: 22px 39px;
+  padding: 21px 34px;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   will-change: transform, backdrop-filter;
@@ -238,10 +244,10 @@ a {
 
 .contact-inner{ display:flex; align-items:center; justify-content:center; }
 .contact-block{ display:flex; align-items:center; justify-content:center; }
-.contact-items{ display:flex; flex-direction:column; gap:100px; align-items:center; }
+.contact-items{ display:flex; flex-direction:column; gap:89px; align-items:center; }
 .contact-items .mini-text{
   position:relative;
-  font-size:25pt;
+  font-size:34px;
   text-shadow: 0 0 12px rgba(0,0,0,0.6);
 }
 /* Links use the lighter manifesto grey; the copyright line stays dimmed */
@@ -713,7 +719,6 @@ button, input[type="button"]{
 
 @media (max-width: 1300px){
   .video-visual{ width: min(100vmax, 100vw); }
-  .main-text{ font-size: 36px; line-height: 66px; } /* 20% smaller: 40px * 0.8 */
 }
 
 /* Below 900px the desktop button row is replaced by the hamburger menu */
@@ -730,17 +735,16 @@ button, input[type="button"]{
     visibility: visible !important;
   }
 
-  .animated-information{ font-size: 18pt; }
+  .animated-information{ font-size: 21px; }
   .video-visual{ height: 150em }
-  .main-text{ font-size: 28px; line-height: 56px; }
+  .main-text{ font-size: 26px; } /* line-height stays 1.618 */
 
-  /* Reduce section spacing by 50% */
-  .manifesto{ padding: 40px 0 0 0; }
-  .manifesto-inner{ gap: 48px; }
-  .contact-items{ gap: 75px; }
+  /* Tighter section spacing, one scale step down */
+  .manifesto{ padding: 34px 0 0 0; }
+  .manifesto-inner{ gap: 34px; }
+  .contact-items{ gap: 55px; }
 
-  /* Make contact elements and copyright 30% smaller */
-  .contact-items .mini-text{ font-size: 17.5pt; }
+  .contact-items .mini-text{ font-size: 21px; }
 
   /* Showreel: close button centered at the bottom, zoom controls above it */
   .overlay-close{
@@ -785,10 +789,9 @@ button, input[type="button"]{
     --page-margin: 17px; /* Half of the default 34px */
   }
 
-  .animated-information{ font-size: 16pt; }
   .title{ font-size: 35pt; }
   .video-visual{ height: 125em }
-  .main-text{ font-size: 20px; line-height: 40px; }
+  .main-text{ font-size: 21px; }
 }
 
 /* Reduced motion (OS setting): manifesto words appear without the reveal,
