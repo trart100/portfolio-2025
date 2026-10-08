@@ -12,20 +12,21 @@ import AnimatedInformation from '../components/AnimatedInformation'
 
 const manifestoParagraphs = [
   {
-    text: 'Meaning begins at the origin and settles at the destination, and motion design gives weight to what happens in between. It is a practice built on clarity, pacing, and the awareness that context defines every choice. Even when the creative field feels broad, the aim is always to understand the problem, observe the environment, and react consciously.',
-    highlights: ['Meaning', 'Motion', 'Practice', 'Awareness', 'Context', 'Observe', 'Consciously']
+    text: 'Meaning begins at the origin and settles at the destination. As a motion designer, I work on what happens in between: the pacing, the transitions, the moment an idea becomes clear. I start with the problem, the audience, and the context, because context decides every frame. Then I build motion that explains, sells, or simply makes people stop scrolling.',
+    highlights: ['Meaning', 'Motion designer', 'Pacing', 'Context']
   },
   {
-    text: 'Context is the quiet force behind design. It shifts constantly, whether through time, audience, or technology, and the designer adapts to those movements. Strategy, communication, and aesthetic direction all follow from this changing foundation. The work becomes an ongoing dialogue, where keeping track of subtle shifts matters as much as taking decisive steps.',
-    highlights: ['Context', 'Design', 'Aesthetic', 'Dialogue']
+    text: 'My work spans brand identities, campaigns, product UI, and social content, from the first storyboard to the final mix. I animate and edit in After Effects, Cinema 4D, Blender, Premiere, and Figma, build coded JavaScript animations for the web, design sound, and automate pipelines when work needs to move faster. One person who can carry a piece from concept to delivery without losing the thread.',
+    // Highlights match single words anywhere in the paragraph, so avoid filler words like "to"
+    highlights: ['Brand identities', 'Campaigns', 'Product UI', 'Coded JavaScript animations', 'Concept', 'Delivery']
   },
   {
-    text: 'Change and stability coexist in every project. They shape the path, the decisions, and the amount of experimentation possible. Time, resources, and skills form the practical limits, while context shapes the intention. Navigating this balance is where the creative process lives. It evolves, pauses, and redirects, but always stays grounded in purpose.',
-    highlights: ['Change', 'Decisions', 'Experimentation', 'Skills', 'Creative process', 'Purpose']
+    text: 'In a team, I care about clarity as much as craft. I have led teams and mentored designers, so I know how briefs, feedback, and deadlines shape the result. Time, budget, and skills set the limits; context sets the intention. Working inside that balance, calmly and on schedule, is where I do my best work.',
+    highlights: ['Team', 'Mentored', 'Clarity', 'Craft']
   },
   {
-    text: 'In an increasingly unstable environment, defining context grows harder, yet the human perspective remains steady. Tools like machine learning assist, but they do not define meaning. Values, direction, and responsibility stay with the designer. Creation happens in the tension between order and chaos, and understanding that tension is what keeps design human.',
-    highlights: ['Unstable', 'Defining', 'Human perspective', 'Meaning', 'Values', 'Responsibility', 'Creation', 'Tension', 'human']
+    text: "Tools change fast. I use machine learning and AI generation where they help, but they do not define meaning: values, direction, and responsibility stay with the designer. If your story needs to move, let's talk.",
+    highlights: ['Meaning', 'Responsibility', "Let's talk"]
   }
 ]
 
