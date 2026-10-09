@@ -195,18 +195,20 @@ a {
   z-index: -1; /* keep behind page content */
   display:block;
 }
-.video-visual video{
+.video-visual video,
+.video-visual canvas{
   width:100%;
   height:100%;
   border-radius:8px;
   display:block;
   pointer-events:none;
   object-fit:cover;
-  /* hidden until the first frame is ready (VideoVisual adds .is-ready) */
+  /* hidden until the first frame is ready (VideoVisual / GyroVisual add .is-ready) */
   opacity:0;
   transition:opacity 600ms ease;
 }
-.video-visual video.is-ready{ opacity:0.8; }
+.video-visual video.is-ready,
+.video-visual canvas.is-ready{ opacity:0.8; }
 
 /* Manifesto */
 .manifesto{ padding:89px 0 233px 0; }
@@ -804,5 +806,6 @@ button, input[type="button"]{
     visibility: visible !important;
   }
   .preloader-circle{ animation: none; }
-  .video-visual video{ transition: none; }
+  .video-visual video,
+  .video-visual canvas{ transition: none; }
 }

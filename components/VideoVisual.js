@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import GyroVisual from './GyroVisual'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 const LERP = 0.15
@@ -9,6 +10,12 @@ const toTransform = (x, y) => `translate(calc(-50% + ${x}px), calc(-50% + ${y}px
 export default function VideoVisual({ movementIntensity = 18 }) {
   const wrapRef = useRef(null)
   const videoRef = useRef(null)
+  // ?3d swaps the video for the real-time 3D version (work in progress)
+  const [use3d, setUse3d] = useState(false)
+
+  useEffect(() => {
+    setUse3d(new URLSearchParams(window.location.search).has('3d'))
+  }, [])
 
   // Parallax: ease the video toward an offset based on the mouse position.
   // Written straight to the DOM (no React re-render) and the loop sleeps when settled.
@@ -90,20 +97,24 @@ export default function VideoVisual({ movementIntensity = 18 }) {
       video.removeEventListener('loadeddata', reveal)
       video.removeEventListener('canplay', handleCanPlay)
     }
-  }, [])
+  }, [use3d])
 
   return (
     <div ref={wrapRef} className="video-visual" style={{ transform: toTransform(0, 0) }}>
-      <video
-        ref={videoRef}
-        playsInline
-        autoPlay
-        muted
-        loop
-        style={{ pointerEvents: 'none' }}
-      >
-        <source src="/assets/video_visual_for_website_1.mp4" type="video/mp4" />
-      </video>
+      {use3d ? (
+        <GyroVisual onFail={() => setUse3d(false)} />
+      ) : (
+        <video
+          ref={videoRef}
+          playsInline
+          autoPlay
+          muted
+          loop
+          style={{ pointerEvents: 'none' }}
+        >
+          <source src="/assets/video_visual_for_website_1.mp4" type="video/mp4" />
+        </video>
+      )}
     </div>
   )
 }

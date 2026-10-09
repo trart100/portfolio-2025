@@ -31,6 +31,17 @@ its defaults are `INERTIA_DEFAULTS`. Open the site with `?tune` (e.g.
 that edits the values live, with presets and a "Copy values" button. Tuned values are kept
 in localStorage for `?tune` visits only; normal visits always use the defaults.
 
+## 3D background (work in progress)
+
+A real-time three.js rebuild of the background video, shown only with `?3d`
+(`http://localhost:3000/?3d`); normal visits keep the video and never download three.js.
+`?3d&t=2.5` freezes the animation at that second, for comparing poses with the video.
+
+- `components/GyroVisual.js` — canvas wrapper used by `VideoVisual`; loads the scene on
+  demand, falls back to the video if WebGL fails
+- `lib/gyro/config.js` — measurements taken from the video (rings, camera, timing)
+- `lib/gyro/scene.js` — the three.js scene and the 10 s loop
+
 ## Versioning
 
 The version from `package.json` is shown bottom-left next to the FPS readout. Bump it on
