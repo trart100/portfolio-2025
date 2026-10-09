@@ -35,12 +35,18 @@ in localStorage for `?tune` visits only; normal visits always use the defaults.
 
 A real-time three.js rebuild of the background video, shown only with `?3d`
 (`http://localhost:3000/?3d`); normal visits keep the video and never download three.js.
-`?3d&t=2.5` freezes the animation at that second, for comparing poses with the video.
+It is rebuilt from the original Blender scene (`main_visual_for_claude.blend`): same camera,
+three glass rings, the 5-ring gold array, the two walls of light and the linear 10 s loop.
+
+- `?3d&t=2.5` freezes the animation at that second, for comparing poses with the video
+- `?3d&gui` adds a live look-tuning panel (lil-gui) with a "Copy values" button
 
 - `components/GyroVisual.js` — canvas wrapper used by `VideoVisual`; loads the scene on
   demand, falls back to the video if WebGL fails
-- `lib/gyro/config.js` — measurements taken from the video (rings, camera, timing)
-- `lib/gyro/scene.js` — the three.js scene and the 10 s loop
+- `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
+- `lib/gyro/scene.js` — the three.js scene and the loop
+- `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
+- `lib/gyro/gui.js` — the `?3d&gui` panel
 
 ## Versioning
 

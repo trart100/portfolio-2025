@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 // Real-time 3D version of the background visual (work in progress, shown with ?3d).
 // three.js is loaded on demand, so normal visits never download it.
 // ?3d&t=2.5 freezes the animation at that second (for comparing with the video).
+// ?3d&gui adds a live look-tuning panel.
 export default function GyroVisual({ onFail }) {
   const canvasRef = useRef(null)
   const onFailRef = useRef(onFail)
@@ -14,6 +15,7 @@ export default function GyroVisual({ onFail }) {
 
     let disposed = false
     let gyro = null
+    let gui = null
     let frameId = null
     let observer = null
 
@@ -26,7 +28,8 @@ export default function GyroVisual({ onFail }) {
       fail('WebGL context lost')
     }
 
-    const frozenParam = new URLSearchParams(window.location.search).get('t')
+    const params = new URLSearchParams(window.location.search)
+    const frozenParam = params.get('t')
     const frozen = frozenParam != null && frozenParam !== '' ? parseFloat(frozenParam) : null
 
     import('../lib/gyro/scene')
@@ -34,6 +37,13 @@ export default function GyroVisual({ onFail }) {
         if (disposed) return
         gyro = createGyroScene(canvas)
         canvas.addEventListener('webglcontextlost', handleContextLost)
+
+        if (params.has('gui')) {
+          window.__gyro = gyro // console access while tuning
+          import('../lib/gyro/gui').then(({ createGyroGui }) => {
+            if (!disposed) gui = createGyroGui(gyro)
+          })
+        }
 
         const box = canvas.parentElement
         const resize = () => gyro.setSize(box.clientWidth, box.clientHeight)
@@ -62,6 +72,8 @@ export default function GyroVisual({ onFail }) {
       if (frameId != null) cancelAnimationFrame(frameId)
       if (observer) observer.disconnect()
       canvas.removeEventListener('webglcontextlost', handleContextLost)
+      if (gui) gui.destroy()
+      if (window.__gyro === gyro) delete window.__gyro
       if (gyro) gyro.dispose()
     }
   }, [])
