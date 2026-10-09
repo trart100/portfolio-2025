@@ -37,6 +37,9 @@ A real-time three.js rebuild of the background video, shown only with `?3d`
 (`http://localhost:3000/?3d`); normal visits keep the video and never download three.js.
 It is rebuilt from the original Blender scene (`main_visual_for_claude.blend`): same camera,
 three glass rings, the 5-ring gold array, the two walls of light and the linear 10 s loop.
+Atmosphere: the gold seen through the glass is blurred and tinted like Cycles' rough glass,
+plus optional glass haze and grain (the "Atmosphere" folder of the panel). The smoky wisps
+of the video were a separate layer added after the render and are not rebuilt yet.
 
 - `?3d&t=2.5` freezes the animation at that second, for comparing poses with the video
 - `?3d&gui` adds a live look-tuning panel (lil-gui) with "Copy values" and
@@ -52,12 +55,15 @@ three glass rings, the 5-ring gold array, the two walls of light and the linear 
 - `components/GyroReference.js` — the `?3d&ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
-- `lib/gyro/scene.js` — the three.js scene and the loop
+- `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (rings + light, the
+  gold alone, its blurred copy and a "glass in front of the gold" mask are drawn into
+  separate images and combined, then AgX tone mapping, exposure and grain)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?3d&gui` panel
 
 ## Versioning
 
 The version from `package.json` is shown bottom-left next to the FPS readout. Bump it on
-every change (`npm version 6.3.X --no-git-tag-version`) and tag the commit `v6.3.X`, so a
-preview or deployment can be matched to the code at a glance.
+every change (`npm version 6.X.Y --no-git-tag-version`) and tag the commit `v6.X.Y`, so a
+preview or deployment can be matched to the code at a glance. The last number never goes
+past 9: after 6.3.9 comes 6.4.0, after 6.4.9 comes 6.5.0.
