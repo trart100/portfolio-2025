@@ -39,7 +39,8 @@ It is rebuilt from the original Blender scene (`main_visual_for_claude.blend`): 
 three glass rings, the 5-ring gold array, the two walls of light and the linear 10 s loop.
 
 - `?3d&t=2.5` freezes the animation at that second, for comparing poses with the video
-- `?3d&gui` adds a live look-tuning panel (lil-gui) with a "Copy values" button
+- `?3d&gui` adds a live look-tuning panel (lil-gui) with "Copy values" and
+  "Reset all to starting values" (the `LOOK` values in `lib/gyro/config.js`)
 
 - `components/GyroVisual.js` — canvas wrapper used by `VideoVisual`; loads the scene on
   demand, falls back to the video if WebGL fails
