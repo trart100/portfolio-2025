@@ -41,9 +41,16 @@ three glass rings, the 5-ring gold array, the two walls of light and the linear 
 - `?3d&t=2.5` freezes the animation at that second, for comparing poses with the video
 - `?3d&gui` adds a live look-tuning panel (lil-gui) with "Copy values" and
   "Reset all to starting values" (the `LOOK` values in `lib/gyro/config.js`)
+- `?3d&ref` opens the comparison tool: the original video drives the clock and the 3D
+  follows frame by frame (Blender frame numbers). Modes: Side by side, Wipe (drag the line),
+  Blend (crossfade slider), Difference (black = identical). Space = play/pause,
+  arrows = ±1 frame (Shift = ±10), keys 1–4 = modes, "Site view" shows the page again.
+  Combine with the panel: `?3d&gui&ref`
 
 - `components/GyroVisual.js` — canvas wrapper used by `VideoVisual`; loads the scene on
   demand, falls back to the video if WebGL fails
+- `components/GyroReference.js` — the `?3d&ref` comparison tool (loaded only with `&ref`)
+- `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
 - `lib/gyro/scene.js` — the three.js scene and the loop
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)

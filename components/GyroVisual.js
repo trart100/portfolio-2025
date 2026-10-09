@@ -1,13 +1,23 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { gyroClock } from '../lib/gyro/clock'
+
+const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
 
 // Real-time 3D version of the background visual (work in progress, shown with ?3d).
 // three.js is loaded on demand, so normal visits never download it.
 // ?3d&t=2.5 freezes the animation at that second (for comparing with the video).
 // ?3d&gui adds a live look-tuning panel.
+// ?3d&ref opens the comparison tool (3D next to / over the original video, in sync).
 export default function GyroVisual({ onFail }) {
   const canvasRef = useRef(null)
   const onFailRef = useRef(onFail)
   onFailRef.current = onFail
+  const [showRef, setShowRef] = useState(false)
+
+  useEffect(() => {
+    setShowRef(new URLSearchParams(window.location.search).has('ref'))
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -54,7 +64,10 @@ export default function GyroVisual({ onFail }) {
         const start = performance.now()
         let first = true
         const loop = (now) => {
-          gyro.render(Number.isFinite(frozen) ? frozen : (now - start) / 1000)
+          let seconds = (now - start) / 1000
+          if (gyroClock.seconds != null) seconds = gyroClock.seconds
+          else if (Number.isFinite(frozen)) seconds = frozen
+          gyro.render(seconds)
           if (first) {
             first = false
             canvas.classList.add('is-ready')
@@ -78,5 +91,10 @@ export default function GyroVisual({ onFail }) {
     }
   }, [])
 
-  return <canvas ref={canvasRef} aria-hidden="true" />
+  return (
+    <>
+      <canvas ref={canvasRef} aria-hidden="true" />
+      {showRef && <GyroReference />}
+    </>
+  )
 }
