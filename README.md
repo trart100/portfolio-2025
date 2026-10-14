@@ -60,9 +60,10 @@ render and are not rebuilt yet.
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
 - `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (the glass is split at
-  the centre plane: the near half + light, the "behind" image = gold + far glass, its blurred
-  copy and a "near glass in front" mask are drawn into separate images and combined, then
-  AgX tone mapping, exposure and grain)
+  the centre plane: the near half + light, the "behind" image = gold + far glass, separately
+  blurred copies of the gold and of the far glass, and depth images of the near glass and of
+  what is behind it are drawn into separate images and combined: things just behind the
+  glass stay sharp, farther ones are blurred; then AgX tone mapping, exposure and grain)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?3d&gui` panel
 
