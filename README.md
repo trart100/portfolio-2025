@@ -59,11 +59,12 @@ render and are not rebuilt yet.
 - `components/GyroReference.js` — the `?3d&ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
-- `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (the glass is split at
-  the centre plane: the near half + light, the "behind" image = gold + far glass, separately
-  blurred copies of the gold and of the far glass, and depth images of the near glass and of
-  what is behind it are drawn into separate images and combined: things just behind the
-  glass stay sharp, farther ones are blurred; then AgX tone mapping, exposure and grain.
+- `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (a depth pre-pass finds
+  the front-most surface at every pixel; the front layer is drawn sharp and everything behind
+  it — gold and glass — goes into a "behind" image, separately blurred copies of the gold and
+  of the glass, and depth images of the front glass and of what is behind it; combined so that
+  things just behind the glass stay sharp and farther ones are blurred; then AgX tone mapping,
+  exposure and grain.
   Desktop renders at 2x and averages down after tone mapping (supersampling); touch devices
   and canvases above 1280 px use 1x with 4x MSAA)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
