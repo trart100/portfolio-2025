@@ -63,7 +63,9 @@ render and are not rebuilt yet.
   the centre plane: the near half + light, the "behind" image = gold + far glass, separately
   blurred copies of the gold and of the far glass, and depth images of the near glass and of
   what is behind it are drawn into separate images and combined: things just behind the
-  glass stay sharp, farther ones are blurred; then AgX tone mapping, exposure and grain)
+  glass stay sharp, farther ones are blurred; then AgX tone mapping, exposure and grain.
+  Desktop renders at 2x and averages down after tone mapping (supersampling); touch devices
+  and canvases above 1280 px use 1x with 4x MSAA)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?3d&gui` panel
 
