@@ -21,16 +21,19 @@ const CSS_VARS = ['--ref-size', '--ref-x', '--ref-y', '--ref-clip', '--ref-opaci
 
 const wrapFrame = (n) => ((n % LOOP_FRAMES) + LOOP_FRAMES) % LOOP_FRAMES
 
+// Positions and size on whole screen pixels, so the 3D canvas isn't resampled (keeps the grain crisp)
 function layoutFor(mode) {
+  const dpr = window.devicePixelRatio || 1
+  const snap = (value) => Math.round(value * dpr) / dpr
   const w = window.innerWidth
   const availH = window.innerHeight - BAR_HEIGHT - GAP * 2
   if (mode === 'side') {
-    const size = Math.max(50, Math.min((w - GAP * 3) / 2, availH))
-    return { size, videoX: (w - GAP) / 2 - size, canvasX: (w + GAP) / 2, y: GAP + (availH - size) / 2 }
+    const size = snap(Math.max(50, Math.min((w - GAP * 3) / 2, availH)))
+    return { size, videoX: snap((w - GAP) / 2 - size), canvasX: snap((w + GAP) / 2), y: snap(GAP + (availH - size) / 2) }
   }
-  const size = Math.max(50, Math.min(w - GAP * 2, availH))
-  const x = (w - size) / 2
-  return { size, videoX: x, canvasX: x, y: GAP + (availH - size) / 2 }
+  const size = snap(Math.max(50, Math.min(w - GAP * 2, availH)))
+  const x = snap((w - size) / 2)
+  return { size, videoX: x, canvasX: x, y: snap(GAP + (availH - size) / 2) }
 }
 
 export default function GyroReference() {
@@ -189,7 +192,7 @@ export default function GyroReference() {
         html.${ROOT_CLASS} .page-content{ z-index:auto; visibility:hidden; }
         html.${ROOT_CLASS} .video-visual{
           visibility:visible; z-index:2045;
-          left:var(--ref-x); top:var(--ref-y);
+          left:var(--ref-x) !important; top:var(--ref-y) !important;
           width:var(--ref-size); height:var(--ref-size);
           max-width:none; max-height:none; border-radius:0;
           transform:none !important;

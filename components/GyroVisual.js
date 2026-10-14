@@ -56,7 +56,21 @@ export default function GyroVisual({ onFail }) {
         }
 
         const box = canvas.parentElement
-        const resize = () => gyro.setSize(box.clientWidth, box.clientHeight)
+        // Whole number of screen pixels (pixel density capped at 2), and a CSS size that
+        // matches exactly, so the browser never stretches the canvas. Absolutely positioned at
+        // the box's corner so its rounded size can't resize (and shift) the box.
+        canvas.style.position = 'absolute'
+        canvas.style.left = '0'
+        canvas.style.top = '0'
+        const resize = () => {
+          const rect = box.getBoundingClientRect()
+          const ratio = Math.min(window.devicePixelRatio || 1, 2)
+          const width = Math.max(1, Math.round(rect.width * ratio))
+          const height = Math.max(1, Math.round(rect.height * ratio))
+          canvas.style.width = `${width / ratio}px`
+          canvas.style.height = `${height / ratio}px`
+          gyro.setSize(width, height)
+        }
         resize()
         observer = new ResizeObserver(resize)
         observer.observe(box)

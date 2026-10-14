@@ -19,6 +19,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
 
   // Parallax: ease the video toward an offset based on the mouse position.
   // Written straight to the DOM (no React re-render) and the loop sleeps when settled.
+  // In 3D mode every position is snapped to whole screen pixels (keeps the grain crisp).
   useEffect(() => {
     const el = wrapRef.current
     if (!el || movementIntensity <= 0) return undefined
@@ -26,6 +27,24 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     const target = { x: 0, y: 0 }
     const current = { x: 0, y: 0 }
     let frameId = null
+
+    const place = () => {
+      if (!use3d) {
+        el.style.transform = toTransform(current.x, current.y)
+        return
+      }
+      // 3D: one whole-pixel translate from the corner. Percentages (left 50%, translate -50%)
+      // can land on half pixels that the browser rounds differently from what it reports.
+      const dpr = window.devicePixelRatio || 1
+      const snap = (value) => Math.round(value * dpr) / dpr
+      const rect = el.getBoundingClientRect()
+      const page = document.documentElement
+      const x = snap((page.clientWidth - rect.width) / 2 + current.x)
+      const y = snap((page.clientHeight - rect.height) / 2 + current.y)
+      el.style.left = '0px'
+      el.style.top = '0px'
+      el.style.transform = `translate(${x}px, ${y}px)`
+    }
 
     const animate = () => {
       current.x += (target.x - current.x) * LERP
@@ -35,7 +54,7 @@ export default function VideoVisual({ movementIntensity = 18 }) {
         current.x = target.x
         current.y = target.y
       }
-      el.style.transform = toTransform(current.x, current.y)
+      place()
       frameId = settled ? null : requestAnimationFrame(animate)
     }
 
@@ -67,13 +86,27 @@ export default function VideoVisual({ movementIntensity = 18 }) {
 
     window.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseout', handleMouseOut)
+    // The centred box moves with the window size and the page width (scrollbar), so re-snap
+    // whenever either changes
+    let layoutObserver = null
+    if (use3d) {
+      place()
+      window.addEventListener('resize', place)
+      layoutObserver = new ResizeObserver(place)
+      layoutObserver.observe(document.documentElement)
+      layoutObserver.observe(el)
+    }
 
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseout', handleMouseOut)
+      window.removeEventListener('resize', place)
+      if (layoutObserver) layoutObserver.disconnect()
+      el.style.left = ''
+      el.style.top = ''
     }
-  }, [movementIntensity])
+  }, [movementIntensity, use3d])
 
   useEffect(() => {
     const video = videoRef.current
