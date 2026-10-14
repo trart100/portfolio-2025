@@ -63,8 +63,9 @@ render and are not rebuilt yet.
   the front-most surface at every pixel; the front layer is drawn sharp and everything behind
   it — gold and glass — goes into a "behind" image, separately blurred copies of the gold and
   of the glass, and depth images of the front glass and of what is behind it; combined so that
-  things just behind the glass stay sharp and farther ones are blurred; then AgX tone mapping,
-  exposure and grain.
+  things just behind the glass stay sharp and farther ones are blurred; since 6.5.2 the
+  layers are peeled progressively (desktop 4, touch 1; "Quality" folder in `?3d&gui`), so a
+  band seen through two bands is blurred twice; then AgX tone mapping, exposure and grain.
   Desktop renders at 2x and averages down after tone mapping (supersampling); touch devices
   and canvases above 1280 px use 1x with 4x MSAA)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
