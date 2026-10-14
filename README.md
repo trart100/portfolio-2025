@@ -38,8 +38,11 @@ A real-time three.js rebuild of the background video, shown only with `?3d`
 It is rebuilt from the original Blender scene (`main_visual_for_claude.blend`): same camera,
 three glass rings, the 5-ring gold array, the two walls of light and the linear 10 s loop.
 Atmosphere: the gold seen through the glass is blurred and tinted like Cycles' rough glass,
-plus optional glass haze and grain (the "Atmosphere" folder of the panel). The smoky wisps
-of the video were a separate layer added after the render and are not rebuilt yet.
+plus optional glass haze and grain (the "Atmosphere" folder of the panel: amount, size,
+colour, speed). The grain uses an integer hash (the common sin()-based one forms a lattice
+on some GPUs), and in 3D mode the canvas is placed on whole screen pixels so the browser
+never resamples it. The smoky wisps of the video were a separate layer added after the
+render and are not rebuilt yet.
 
 - `?3d&t=2.5` freezes the animation at that second, for comparing poses with the video
 - `?3d&gui` adds a live look-tuning panel (lil-gui) with "Copy values" and
