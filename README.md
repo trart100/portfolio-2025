@@ -37,7 +37,8 @@ A real-time three.js rebuild of the background video, shown only with `?3d`
 (`http://localhost:3000/?3d`); normal visits keep the video and never download three.js.
 It is rebuilt from the original Blender scene (`main_visual_for_claude.blend`): same camera,
 three glass rings, the 5-ring gold array, the two walls of light and the linear 10 s loop.
-Atmosphere: the gold seen through the glass is blurred and tinted like Cycles' rough glass,
+Atmosphere: what is seen through a glass band (the gold and the far halves of the other
+rings) is blurred and tinted like Cycles' rough glass,
 plus optional glass haze and grain (the "Atmosphere" folder of the panel: amount, size,
 colour, speed). The grain uses an integer hash (the common sin()-based one forms a lattice
 on some GPUs), and in 3D mode the canvas is placed on whole screen pixels so the browser
@@ -58,9 +59,10 @@ render and are not rebuilt yet.
 - `components/GyroReference.js` — the `?3d&ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
-- `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (rings + light, the
-  gold alone, its blurred copy and a "glass in front of the gold" mask are drawn into
-  separate images and combined, then AgX tone mapping, exposure and grain)
+- `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (the glass is split at
+  the centre plane: the near half + light, the "behind" image = gold + far glass, its blurred
+  copy and a "near glass in front" mask are drawn into separate images and combined, then
+  AgX tone mapping, exposure and grain)
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?3d&gui` panel
 
