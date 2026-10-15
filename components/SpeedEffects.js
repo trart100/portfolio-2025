@@ -3,15 +3,12 @@ import { effects, fxFrame, updateEffects, EFFECT_MODES } from '../lib/gyro/effec
 import { gyroSpin } from '../lib/gyro/spin'
 
 const STEP = 0.25 // px; amounts are rounded to this so the page only repaints on real changes
-const RED = 'rgba(255, 0, 0, 0.7)'
-const BLUE = 'rgba(0, 90, 255, 0.7)'
 
 const snap = (value) => Math.round(value / STEP) * STEP
 
-// Mode a: the page blocks that get the text colour split and move with the shake. The values are
-// set on these elements only: on <html> they restyled the whole page every frame (~75 ms per
-// second in phone emulation). The translate is removed at rest, since a translate on an element
-// would also pin any position:fixed child to it.
+// Mode a: the page blocks that move with the shake. Set on these elements only (on <html> a value
+// restyled the whole page every frame). The translate is removed at rest, since a translate on an
+// element would also pin any position:fixed child to it.
 const TARGETS = '.title, .animated-information, .manifesto-p, .contact-items .mini-text, .menu-btn, #dot-grid'
 
 // Page side of the speed-driven effects (effects.js: chromatic aberration + shake); the 3D side
@@ -19,8 +16,9 @@ const TARGETS = '.title, .animated-information, .manifesto-p, .contact-items .mi
 // Mode b (desktop): the SVG filter below on <html> = true RGB split + shake of the whole page,
 //   3D included. On <html> because a filter on any other element would break its position:fixed
 //   children (the 3D, the menu); removed whenever both amounts are 0, so at rest it costs nothing.
-// Mode a (touch): red/blue text-shadow (--ca-text, see globals.css) and a CSS translate on the
-//   page blocks (TARGETS).
+// Mode a (touch): a CSS translate on the page blocks (TARGETS) for the shake; the colour split is
+//   only in the 3D (scene.js). The text-shadow split on the text was removed in 6.7.2 (it did not
+//   look good on phones).
 // Compare: ?fx=auto|off|a|b; with ?gui the "Speed effects" folder switches it live and can hold
 // the energy at a fixed level, and the C key cycles the modes.
 export default function SpeedEffects() {
@@ -50,15 +48,12 @@ export default function SpeedEffects() {
       if (key === last) return
       last = key
 
-      const inPage = mode === 'a' && (chroma > 0 || x || y)
+      const inPage = mode === 'a' && (x || y)
       // Look the blocks up again at the start of each burst (the page may have re-rendered)
       if (inPage && !pageActive) targets = Array.from(document.querySelectorAll(TARGETS))
       if (inPage || pageActive) {
-        const shadow = inPage && chroma > 0 ? `${-chroma}px 0 0 ${RED}, ${chroma}px 0 0 ${BLUE}` : ''
-        const move = inPage && (x || y) ? `${x}px ${y}px` : ''
+        const move = inPage ? `${x}px ${y}px` : ''
         targets.forEach((el) => {
-          if (shadow) el.style.setProperty('--ca-text', shadow)
-          else el.style.removeProperty('--ca-text')
           el.style.translate = move
         })
       }
@@ -92,7 +87,6 @@ export default function SpeedEffects() {
       cancelAnimationFrame(frameId)
       window.removeEventListener('keydown', handleKey)
       targets.forEach((el) => {
-        el.style.removeProperty('--ca-text')
         el.style.translate = ''
       })
       root.style.filter = ''
