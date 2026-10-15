@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import GyroVisual from './GyroVisual'
 import { gyroPointer } from '../lib/gyro/pointer'
+import { gyroSpin } from '../lib/gyro/spin'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 const LERP = 0.15
@@ -11,6 +12,7 @@ const CENTERED = 'translate(-50%, -50%)'
 // The background visual: the real-time 3D (GyroVisual), centred on whole screen pixels.
 // Mouse drift: the eased mouse position goes to the 3D (gyroPointer), where the glass and the
 // gold move towards it by their own amounts (LOOK.drift); the box itself stays put.
+// Click / tap anywhere: the gold spins up, the glass follows (spin.js, LOOK.spin).
 export default function VideoVisual() {
   const wrapRef = useRef(null)
 
@@ -65,7 +67,14 @@ export default function VideoVisual() {
       wake()
     }
 
+    // Capture phase: counts clicks on links and buttons too. `click` (not pointerdown), so a
+    // touch scroll doesn't count as a tap.
+    const handleClick = () => {
+      gyroSpin.kicks += 1
+    }
+
     window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('click', handleClick, true)
     document.addEventListener('mouseout', handleMouseOut)
     // The centred box moves with the window size and the page width (scrollbar), so re-snap
     // whenever either changes
@@ -78,6 +87,8 @@ export default function VideoVisual() {
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('click', handleClick, true)
+      gyroSpin.kicks = 0
       document.removeEventListener('mouseout', handleMouseOut)
       window.removeEventListener('resize', place)
       layoutObserver.disconnect()

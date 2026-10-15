@@ -63,6 +63,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
   loads the scene on demand, rebuilds it after a lost WebGL context
 - `components/GyroReference.js` — the `?ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
+- `lib/gyro/spin.js` — click / tap spin-up: each click adds speed to the gold (adds up), the glass follows the gold's speed with a lag, both ease back to the normal loop (`LOOK.spin`, "Click spin" in `?gui`; off with `?t` / `?ref`)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
 - `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (a depth pre-pass finds
   the front-most surface at every pixel; the front layer is drawn sharp and everything behind

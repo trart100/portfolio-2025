@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { gyroClock } from '../lib/gyro/clock'
+import { createSpinClock } from '../lib/gyro/spin'
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
 
@@ -124,22 +125,30 @@ export default function GyroVisual() {
 
           const begin = performance.now()
           let lastRender = -Infinity
+          // Click spin-up: own clocks for the gold and the glass (off for frozen frames / ?ref)
+          const spinClock = createSpinClock(gyro.look.spin)
           const loop = (now) => {
             frameId = requestAnimationFrame(loop)
             if (now - lastRender < MIN_FRAME_MS) return
+            const dt = lastRender > 0 ? (now - lastRender) / 1000 : 0
             lastRender = now
             let seconds = (now - begin) / 1000
+            let spin = null
             if (gyroClock.seconds != null) seconds = gyroClock.seconds
             else if (Number.isFinite(frozen)) seconds = frozen
+            else {
+              spinClock.step(dt)
+              spin = spinClock
+            }
             if (quality.isMeasuring()) {
               // Drain the frames the GPU still has queued first, so only this frame is timed
               gyro.finish()
               const t0 = performance.now()
-              gyro.render(seconds)
+              gyro.render(seconds, spin)
               gyro.finish()
               quality.frame(now, performance.now() - t0)
             } else {
-              gyro.render(seconds)
+              gyro.render(seconds, spin)
               quality.frame(now)
             }
             // Readable from the element inspector (also on phones): level, start-up timings and
