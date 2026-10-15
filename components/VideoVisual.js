@@ -8,11 +8,14 @@ const LERP = 0.15
 const SETTLE = 0.0005
 
 const CENTERED = 'translate(-50%, -50%)'
+// Scroll jumps larger than this in one event (scroll restored after a resize or reload, anchor
+// jumps) only count up to it, so they don't fire a full spin
+const MAX_SCROLL_STEP = 300
 
 // The background visual: the real-time 3D (GyroVisual), centred on whole screen pixels.
 // Mouse drift: the eased mouse position goes to the 3D (gyroPointer), where the glass and the
 // gold move towards it by their own amounts (LOOK.drift); the box itself stays put.
-// Click / tap anywhere: the gold spins up, the glass follows (spin.js, LOOK.spin).
+// Click / tap anywhere, or scroll: the gold spins up, the glass follows (spin.js, LOOK.spin).
 export default function VideoVisual() {
   const wrapRef = useRef(null)
 
@@ -73,8 +76,17 @@ export default function VideoVisual() {
       gyroSpin.kicks += 1
     }
 
+    // Scrolling (wheel, touch, keys, scrollbar) adds speed by the distance scrolled
+    let lastScrollY = window.scrollY
+    const handleScroll = () => {
+      const y = window.scrollY
+      gyroSpin.scrolled += Math.min(Math.abs(y - lastScrollY), MAX_SCROLL_STEP)
+      lastScrollY = y
+    }
+
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('click', handleClick, true)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     document.addEventListener('mouseout', handleMouseOut)
     // The centred box moves with the window size and the page width (scrollbar), so re-snap
     // whenever either changes
@@ -88,7 +100,9 @@ export default function VideoVisual() {
       if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('click', handleClick, true)
+      window.removeEventListener('scroll', handleScroll)
       gyroSpin.kicks = 0
+      gyroSpin.scrolled = 0
       document.removeEventListener('mouseout', handleMouseOut)
       window.removeEventListener('resize', place)
       layoutObserver.disconnect()
