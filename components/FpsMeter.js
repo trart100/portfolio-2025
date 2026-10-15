@@ -17,9 +17,17 @@ export default function FpsMeter({ visible = process.env.NODE_ENV === 'developme
     let last = performance.now()
     let label = ''
     let rafId = null
+    let canvas = null
+
+    // 3D quality level (1 = best .. 5), from the canvas readout set by GyroVisual
+    const quality = () => {
+      if (!canvas || !canvas.isConnected) canvas = document.querySelector('.video-visual canvas')
+      const level = canvas && canvas.dataset.quality
+      return level ? ` / Q${level}` : ''
+    }
 
     const render = () => {
-      const next = `${size.w} × ${size.h} / ${fps} FPS`
+      const next = `${size.w} × ${size.h} / ${fps} FPS${quality()}`
       if (next !== label && textRef.current) {
         label = next
         textRef.current.textContent = next
