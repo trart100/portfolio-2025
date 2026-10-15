@@ -105,6 +105,7 @@ export default function GyroVisual() {
               resize()
             },
             onSettled: () => {
+              canvas.dataset.measured = quality.getMeasured().join('/')
               canvas.classList.add('is-ready')
               sendReady()
               if (params.has('gui')) {
@@ -129,6 +130,13 @@ export default function GyroVisual() {
             } else {
               gyro.render(seconds)
               quality.frame(now)
+            }
+            // Readable from the element inspector (also on phones): level, start-up timings and
+            // when each level began (ms after page start)
+            const label = `${quality.getLevel()}`
+            if (canvas.dataset.quality !== label) {
+              canvas.dataset.quality = label
+              canvas.dataset.levels = `${canvas.dataset.levels ? `${canvas.dataset.levels} ` : ''}${label}@${Math.round(now)}`
             }
             frameId = requestAnimationFrame(loop)
           }
