@@ -9,6 +9,8 @@
   --menu-btn-font-size: 34px;
   --menu-btn-width: 278px;
   --menu-btn-height: 92px;
+  /* chromatic aberration on the text (ChromaticAberration.js sets it while the 3D spins fast) */
+  --ca-text: 0 0 0 transparent;
 }
 
 /* Text selection: see-through grey (clicking to spin the 3D often selects text), so the visual
@@ -100,6 +102,7 @@ a {
 }
 
 .page-root{ min-height:100%; width:100%; overflow-x:hidden; }
+.page-root{ text-shadow: var(--ca-text); }
 .page-content{ width:100%; position:relative; z-index:1; }
 
 .container{
@@ -155,7 +158,7 @@ a {
   color: #6e6e6e;
   text-align: center;
   /* soft dark halo keeps the grey legible where it crosses the bright rings */
-  text-shadow: 0 0 12px rgba(0,0,0,0.6);
+  text-shadow: var(--ca-text), 0 0 12px rgba(0,0,0,0.6);
 }
 .word-span{ display:inline-block; white-space:nowrap; }
 .char-span{ display:inline-block; }
@@ -255,7 +258,7 @@ a {
 .contact-items .mini-text{
   position:relative;
   font-size:34px;
-  text-shadow: 0 0 12px rgba(0,0,0,0.6);
+  text-shadow: var(--ca-text), 0 0 12px rgba(0,0,0,0.6);
 }
 /* Links use the lighter manifesto grey; the copyright line stays dimmed */
 .contact-items a.mini-text{ color:#9f9e9f; }
