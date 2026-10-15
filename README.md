@@ -75,7 +75,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
   and canvases above 1920 px use 1x with 4x MSAA)
 - `lib/gyro/quality.js` — adaptive quality: 5 levels (glass layers 4/2/1, 2x → 1x, 75% canvas).
   The level is picked behind the preloader from GPU-synced frame times (the preloader waits for
-  it); afterwards only sustained slowness (~2 s below ~50 fps) steps down, one level at a time,
+  it); afterwards every 15th frame is timed the same way (frame-rate caps like phone low-power mode$([Environment]::NewLine)  are not mistaken for slowness) and only sustained slowness (~3 s above 20 ms) steps down, one level at a time,
   never back up. The lowest level is still the 3D (no video or still-image fallback).
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?gui` panel
