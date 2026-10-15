@@ -112,8 +112,11 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     const video = videoRef.current
     if (!video) return undefined
 
-    // Tells the Preloader the video can play (HAVE_FUTURE_DATA)
+    // Tells the Preloader the video can play (HAVE_FUTURE_DATA). Not in 3D mode: the video is
+    // mounted for a moment before ?3d is read, and a cached video would end the preloader
+    // before the 3D has picked its quality level (GyroVisual sends the signal then).
     const handleCanPlay = () => {
+      if (new URLSearchParams(window.location.search).has('3d')) return
       window.dispatchEvent(new CustomEvent('videoCanPlay'))
     }
     // Fade in (CSS) once the first frame exists (HAVE_CURRENT_DATA), so a slow

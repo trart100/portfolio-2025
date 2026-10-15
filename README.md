@@ -53,6 +53,8 @@ render and are not rebuilt yet.
   Blend (crossfade slider), Difference (black = identical). Space = play/pause,
   arrows = ±1 frame (Shift = ±10), keys 1–4 = modes, "Site view" shows the page again.
   Combine with the panel: `?3d&gui&ref`
+- `?3d&q=1..5` forces a quality level (see `lib/gyro/quality.js`); without it the level is
+  picked automatically (not with `&t` / `&ref`)
 
 - `components/GyroVisual.js` — canvas wrapper used by `VideoVisual`; loads the scene on
   demand, falls back to the video if WebGL fails
@@ -67,7 +69,11 @@ render and are not rebuilt yet.
   layers are peeled progressively (desktop 4, touch 1; "Quality" folder in `?3d&gui`), so a
   band seen through two bands is blurred twice; then AgX tone mapping, exposure and grain.
   Desktop renders at 2x and averages down after tone mapping (supersampling); touch devices
-  and canvases above 1280 px use 1x with 4x MSAA)
+  and canvases above 1920 px use 1x with 4x MSAA)
+- `lib/gyro/quality.js` — adaptive quality: 5 levels (glass layers 4/2/1, 2x → 1x, 75% canvas).
+  The level is picked behind the preloader from GPU-synced frame times (the preloader waits for
+  it); afterwards only sustained slowness (~2 s below ~50 fps) steps down, one level at a time,
+  never back up. The lowest level is still the 3D (no video or still-image fallback).
 - `lib/gyro/lightWalls.js` — the light-wall mesh exported from Blender (used for reflections)
 - `lib/gyro/gui.js` — the `?3d&gui` panel
 

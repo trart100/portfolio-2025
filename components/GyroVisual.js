@@ -42,8 +42,10 @@ export default function GyroVisual({ onFail }) {
     const frozenParam = params.get('t')
     const frozen = frozenParam != null && frozenParam !== '' ? parseFloat(frozenParam) : null
 
-    import('../lib/gyro/scene')
-      .then(({ createGyroScene }) => {
+    const forcedParam = parseInt(params.get('q'), 10)
+
+    Promise.all([import('../lib/gyro/scene'), import('../lib/gyro/quality')])
+      .then(([{ createGyroScene }, { createQualityController }]) => {
         if (disposed) return
         gyro = createGyroScene(canvas)
         canvas.addEventListener('webglcontextlost', handleContextLost)
@@ -62,9 +64,11 @@ export default function GyroVisual({ onFail }) {
         canvas.style.position = 'absolute'
         canvas.style.left = '0'
         canvas.style.top = '0'
+        // resolution < 1 (lowest quality level only): fewer canvas pixels, stretched to the box
+        let resolution = 1
         const resize = () => {
           const rect = box.getBoundingClientRect()
-          const ratio = Math.min(window.devicePixelRatio || 1, 2)
+          const ratio = Math.min(window.devicePixelRatio || 1, 2) * resolution
           const width = Math.max(1, Math.round(rect.width * ratio))
           const height = Math.max(1, Math.round(rect.height * ratio))
           canvas.style.width = `${width / ratio}px`
@@ -75,18 +79,41 @@ export default function GyroVisual({ onFail }) {
         observer = new ResizeObserver(resize)
         observer.observe(box)
 
+        // Adaptive quality: picks the level behind the preloader, then only steps down on
+        // sustained slowness. Off for frozen frames / the comparison tool (dev captures);
+        // ?q=1..5 forces a level.
+        const quality = createQualityController({
+          gyro,
+          setResolution: (value) => {
+            resolution = value
+            resize()
+          },
+          // Same signal the video sends, so the Preloader can finish
+          onSettled: () => {
+            canvas.classList.add('is-ready')
+            window.dispatchEvent(new CustomEvent('videoCanPlay'))
+            if (params.has('gui')) {
+              console.info(`[GyroVisual] quality level ${quality.getLevel()} (start-up ms per level tried: ${quality.getMeasured().join(', ')})`)
+            }
+          },
+          forcedLevel: Number.isFinite(forcedParam) ? forcedParam : null,
+          adapt: !Number.isFinite(frozen) && !params.has('ref')
+        })
+        gyro.quality = quality
+
         const start = performance.now()
-        let first = true
         const loop = (now) => {
           let seconds = (now - start) / 1000
           if (gyroClock.seconds != null) seconds = gyroClock.seconds
           else if (Number.isFinite(frozen)) seconds = frozen
-          gyro.render(seconds)
-          if (first) {
-            first = false
-            canvas.classList.add('is-ready')
-            // Same signal the video sends, so the Preloader can finish
-            window.dispatchEvent(new CustomEvent('videoCanPlay'))
+          if (quality.isMeasuring()) {
+            const begin = performance.now()
+            gyro.render(seconds)
+            gyro.finish()
+            quality.frame(now, performance.now() - begin)
+          } else {
+            gyro.render(seconds)
+            quality.frame(now)
           }
           frameId = requestAnimationFrame(loop)
         }
