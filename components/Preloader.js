@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
 // Longest the preloader may hold the page, whatever is still loading.
-// The background video fades in on its own once it has a frame (VideoVisual).
+// The 3D background (GyroVisual) sends 'videoCanPlay' once it has picked its quality level,
+// and fades in on its own.
 const MAX_WAIT_MS = 3500
 // Counter value reached at MAX_WAIT_MS; it jumps to 100 when loading finishes
 const PROGRESS_CEILING = 95

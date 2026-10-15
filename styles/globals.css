@@ -179,7 +179,7 @@ a {
   height: 0;
 }
 
-/* Fixed, centered video visual that stays visible; content scrolls over it */
+/* Fixed, centered 3D visual that stays visible; content scrolls over it */
 .video-visual{
   position:fixed;
   left:50%;
@@ -195,7 +195,6 @@ a {
   z-index: -1; /* keep behind page content */
   display:block;
 }
-.video-visual video,
 .video-visual canvas{
   width:100%;
   height:100%;
@@ -203,11 +202,10 @@ a {
   display:block;
   pointer-events:none;
   object-fit:cover;
-  /* hidden until the first frame is ready (VideoVisual / GyroVisual add .is-ready) */
+  /* hidden until the 3D has picked its quality level (GyroVisual adds .is-ready) */
   opacity:0;
   transition:opacity 600ms ease;
 }
-.video-visual video.is-ready,
 .video-visual canvas.is-ready{ opacity:0.8; }
 
 /* Manifesto */
@@ -797,7 +795,7 @@ button, input[type="button"]{
 }
 
 /* Reduced motion (OS setting): manifesto words appear without the reveal,
-   preloader rings stop pulsing, the background video appears without fading.
+   preloader rings stop pulsing, the background visual appears without fading.
    The rotating line is handled in AnimatedInformation. */
 @media (prefers-reduced-motion: reduce){
   .ap-word{
@@ -806,6 +804,5 @@ button, input[type="button"]{
     visibility: visible !important;
   }
   .preloader-circle{ animation: none; }
-  .video-visual video,
   .video-visual canvas{ transition: none; }
 }

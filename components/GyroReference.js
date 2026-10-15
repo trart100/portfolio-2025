@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { FIRST_FRAME, FPS, LOOP_FRAMES } from '../lib/gyro/config'
 import { gyroClock } from '../lib/gyro/clock'
 
-// Comparison tool for the 3D background (dev aid, ?3d&ref). The original video is the master
+// Comparison tool for the 3D background (dev aid, ?ref). The original video is the master
 // clock: on every video frame the 3D scene renders the same moment. Frame numbers follow
 // Blender (1..300). Page content is hidden while the tool is on ("Site view" shows it again).
 const VIDEO_SRC = '/assets/video_visual_for_website_1.mp4'

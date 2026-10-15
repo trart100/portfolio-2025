@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import GyroVisual from './GyroVisual'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
@@ -7,19 +7,13 @@ const SETTLE_PX = 0.01
 
 const toTransform = (x, y) => `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
 
+// The background visual: the real-time 3D (GyroVisual), drifting a little with the mouse.
 export default function VideoVisual({ movementIntensity = 18 }) {
   const wrapRef = useRef(null)
-  const videoRef = useRef(null)
-  // ?3d swaps the video for the real-time 3D version (work in progress)
-  const [use3d, setUse3d] = useState(false)
 
-  useEffect(() => {
-    setUse3d(new URLSearchParams(window.location.search).has('3d'))
-  }, [])
-
-  // Parallax: ease the video toward an offset based on the mouse position.
+  // Parallax: ease the box toward an offset based on the mouse position.
   // Written straight to the DOM (no React re-render) and the loop sleeps when settled.
-  // In 3D mode every position is snapped to whole screen pixels (keeps the grain crisp).
+  // Every position is snapped to whole screen pixels (keeps the grain crisp).
   useEffect(() => {
     const el = wrapRef.current
     if (!el || movementIntensity <= 0) return undefined
@@ -28,13 +22,9 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     const current = { x: 0, y: 0 }
     let frameId = null
 
+    // One whole-pixel translate from the corner. Percentages (left 50%, translate -50%)
+    // can land on half pixels that the browser rounds differently from what it reports.
     const place = () => {
-      if (!use3d) {
-        el.style.transform = toTransform(current.x, current.y)
-        return
-      }
-      // 3D: one whole-pixel translate from the corner. Percentages (left 50%, translate -50%)
-      // can land on half pixels that the browser rounds differently from what it reports.
       const dpr = window.devicePixelRatio || 1
       const snap = (value) => Math.round(value * dpr) / dpr
       const rect = el.getBoundingClientRect()
@@ -88,69 +78,26 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     document.addEventListener('mouseout', handleMouseOut)
     // The centred box moves with the window size and the page width (scrollbar), so re-snap
     // whenever either changes
-    let layoutObserver = null
-    if (use3d) {
-      place()
-      window.addEventListener('resize', place)
-      layoutObserver = new ResizeObserver(place)
-      layoutObserver.observe(document.documentElement)
-      layoutObserver.observe(el)
-    }
+    place()
+    window.addEventListener('resize', place)
+    const layoutObserver = new ResizeObserver(place)
+    layoutObserver.observe(document.documentElement)
+    layoutObserver.observe(el)
 
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
       window.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseout', handleMouseOut)
       window.removeEventListener('resize', place)
-      if (layoutObserver) layoutObserver.disconnect()
+      layoutObserver.disconnect()
       el.style.left = ''
       el.style.top = ''
     }
-  }, [movementIntensity, use3d])
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return undefined
-
-    // Tells the Preloader the video can play (HAVE_FUTURE_DATA). Not in 3D mode: the video is
-    // mounted for a moment before ?3d is read, and a cached video would end the preloader
-    // before the 3D has picked its quality level (GyroVisual sends the signal then).
-    const handleCanPlay = () => {
-      if (new URLSearchParams(window.location.search).has('3d')) return
-      window.dispatchEvent(new CustomEvent('videoCanPlay'))
-    }
-    // Fade in (CSS) once the first frame exists (HAVE_CURRENT_DATA), so a slow
-    // video never pops in after the preloader has already gone
-    const reveal = () => video.classList.add('is-ready')
-
-    if (video.readyState >= 2) reveal()
-    else video.addEventListener('loadeddata', reveal, { once: true })
-
-    if (video.readyState >= 3) handleCanPlay()
-    else video.addEventListener('canplay', handleCanPlay, { once: true })
-
-    return () => {
-      video.removeEventListener('loadeddata', reveal)
-      video.removeEventListener('canplay', handleCanPlay)
-    }
-  }, [use3d])
+  }, [movementIntensity])
 
   return (
     <div ref={wrapRef} className="video-visual" style={{ transform: toTransform(0, 0) }}>
-      {use3d ? (
-        <GyroVisual onFail={() => setUse3d(false)} />
-      ) : (
-        <video
-          ref={videoRef}
-          playsInline
-          autoPlay
-          muted
-          loop
-          style={{ pointerEvents: 'none' }}
-        >
-          <source src="/assets/video_visual_for_website_1.mp4" type="video/mp4" />
-        </video>
-      )}
+      <GyroVisual />
     </div>
   )
 }
