@@ -8,13 +8,19 @@ const BLUE = 'rgba(0, 90, 255, 0.7)'
 
 const snap = (value) => Math.round(value / STEP) * STEP
 
+// Mode a: the page blocks that get the text colour split and move with the shake. The values are
+// set on these elements only: on <html> they restyled the whole page every frame (~75 ms per
+// second in phone emulation). The translate is removed at rest, since a translate on an element
+// would also pin any position:fixed child to it.
+const TARGETS = '.title, .animated-information, .manifesto-p, .contact-items .mini-text, .menu-btn, #dot-grid'
+
 // Page side of the speed-driven effects (effects.js: chromatic aberration + shake); the 3D side
 // of mode a is in scene.js. Updates the shared frame values once per frame, then:
 // Mode b (desktop): the SVG filter below on <html> = true RGB split + shake of the whole page,
 //   3D included. On <html> because a filter on any other element would break its position:fixed
 //   children (the 3D, the menu); removed whenever both amounts are 0, so at rest it costs nothing.
-// Mode a (touch): red/blue text-shadow on the text (--ca-text) and a CSS translate on the text
-//   blocks (--shake-x / --shake-y, class fx-shake on <html>; see globals.css).
+// Mode a (touch): red/blue text-shadow (--ca-text, see globals.css) and a CSS translate on the
+//   page blocks (TARGETS).
 // Compare: ?fx=auto|off|a|b; with ?gui the "Speed effects" folder switches it live and can hold
 // the energy at a fixed level, and the C key cycles the modes.
 export default function SpeedEffects() {
@@ -29,6 +35,8 @@ export default function SpeedEffects() {
     if (EFFECT_MODES.includes(forced)) effects.mode = forced
 
     let last = ''
+    let targets = []
+    let pageActive = false
     let frameId = null
     const begin = performance.now()
     const loop = (now) => {
@@ -42,14 +50,19 @@ export default function SpeedEffects() {
       if (key === last) return
       last = key
 
-      const inPage = mode === 'a'
-      if (inPage && chroma > 0) root.style.setProperty('--ca-text', `${-chroma}px 0 0 ${RED}, ${chroma}px 0 0 ${BLUE}`)
-      else root.style.removeProperty('--ca-text')
-      if (inPage && (x || y)) {
-        root.style.setProperty('--shake-x', `${x}px`)
-        root.style.setProperty('--shake-y', `${y}px`)
-        root.classList.add('fx-shake')
-      } else root.classList.remove('fx-shake')
+      const inPage = mode === 'a' && (chroma > 0 || x || y)
+      // Look the blocks up again at the start of each burst (the page may have re-rendered)
+      if (inPage && !pageActive) targets = Array.from(document.querySelectorAll(TARGETS))
+      if (inPage || pageActive) {
+        const shadow = inPage && chroma > 0 ? `${-chroma}px 0 0 ${RED}, ${chroma}px 0 0 ${BLUE}` : ''
+        const move = inPage && (x || y) ? `${x}px ${y}px` : ''
+        targets.forEach((el) => {
+          if (shadow) el.style.setProperty('--ca-text', shadow)
+          else el.style.removeProperty('--ca-text')
+          el.style.translate = move
+        })
+      }
+      pageActive = inPage
 
       if (mode === 'b' && (chroma > 0 || x || y)) {
         redRef.current.setAttribute('dx', String(x - chroma))
@@ -78,8 +91,10 @@ export default function SpeedEffects() {
     return () => {
       cancelAnimationFrame(frameId)
       window.removeEventListener('keydown', handleKey)
-      root.style.removeProperty('--ca-text')
-      root.classList.remove('fx-shake')
+      targets.forEach((el) => {
+        el.style.removeProperty('--ca-text')
+        el.style.translate = ''
+      })
       root.style.filter = ''
       delete root.dataset.fx
       delete window.__fx

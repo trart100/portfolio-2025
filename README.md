@@ -66,6 +66,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/spin.js` — click / tap / scroll spin-up: each click adds speed to the gold (adds up; scrolling adds `LOOK.spin.scroll` per 1000 px), the glass follows the gold's speed with a lag, both ease back to the normal loop (`LOOK.spin`, "Click spin" in `?gui`; off with `?t` / `?ref`)
 - `lib/gyro/effects.js` + `components/SpeedEffects.js` — effects driven by the spin speed (`gyroSpin.energy`, 0..1): chromatic aberration (red left, blue right) and shake, each strength x energy^curve (`LOOK.effects`, "Speed effects" in `?gui` with a hold-energy test switch; C key cycles modes). Mode `auto` (default) = `b` on desktop, `a` on touch. `b` = one SVG filter on `<html>` (true split + shake of the whole page, only while above 0); `a` = in the 3D's final shader pass + red/blue text-shadow (`--ca-text`) and a CSS translate on the text blocks (`html.fx-shake`)
+- `components/DotGrid.js` — the dot grid, drawn on one canvas (since 6.7.1): tilt towards the mouse, dots grow near it, and a ripple from every click / tap (`LOOK.effects.ripple`, "Grid ripple" in `?gui`; stronger at high spin speed)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
 - `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (a depth pre-pass finds
   the front-most surface at every pixel; the front layer is drawn sharp and everything behind

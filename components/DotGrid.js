@@ -1,16 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
+import { effects } from '../lib/gyro/effects'
+import { gyroSpin } from '../lib/gyro/spin'
 
 const PAGE_MARGIN = 34
 const BASE_HORIZONTAL_SPACING = 68
 const BASE_VERTICAL_SPACING = 90
 const DOT_SIZE = 5
-const DOT_COLOR = 'rgba(255, 255, 255, 0.2)'
+const DOT_ALPHA = 0.2
 const MAX_ROTATION_DEGREES = 2
 const DEFAULT_REACTION_SPEED = 0.08
 const DEFAULT_PROXIMITY_DISTANCE = 200
 const DEFAULT_SCALE_DELTA = .7
 // Below this difference (scale units / degrees) a value counts as settled
 const SETTLE_EPSILON = 0.0005
+// Most ripples running at once (fast clicking drops the oldest)
+const MAX_RIPPLES = 8
+const MAX_PIXEL_RATIO = 2
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
@@ -33,72 +38,52 @@ function buildDots(width, height) {
     const y = PAGE_MARGIN + row * verticalSpacing
     for (let col = 0; col <= horizontalIntervals; col++) {
       const x = PAGE_MARGIN + col * horizontalSpacing
-      dots.push({ id: `dot-${row}-${col}`, x, y })
+      // scale = eased size, target = where the mouse proximity wants it
+      dots.push({ x, y, scale: 1, target: 1 })
     }
   }
 
   return dots
 }
 
+// Background dot grid, drawn on one canvas (until 6.7.0 one element per dot; the click ripple
+// changes every dot every frame, which cost ~5 ms per frame on the main thread as elements).
+// The grid tilts towards the mouse (CSS transform on the box), dots near the mouse grow, far ones
+// shrink, and every click / tap sends a ripple through the dots (LOOK.effects.ripple).
+// The loop sleeps once everything has settled; input wakes it again.
 export default function DotGrid({
   reactionSpeed = DEFAULT_REACTION_SPEED,
   proximityDistance = DEFAULT_PROXIMITY_DISTANCE,
   scaleDelta = DEFAULT_SCALE_DELTA
 }) {
-  const [dots, setDots] = useState([])
   const containerRef = useRef(null)
-  const rotationRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 })
-  const dotElementsRef = useRef(new Map())
-  const dotPositionsRef = useRef(new Map())
-  const scaleTargetsRef = useRef(new Map())
-  const scaleCurrentRef = useRef(new Map())
-  const cursorRef = useRef({ x: 0, y: 0, active: false })
-  // Set by the animation effect; lets the resize handler restart the sleeping loop
-  const wakeRef = useRef(() => {})
+  const canvasRef = useRef(null)
 
   useEffect(() => {
-    let isMounted = true
+    const container = containerRef.current
+    const canvas = canvasRef.current
+    const ctx = canvas && canvas.getContext('2d')
+    if (!container || !ctx) return undefined
 
-    const rebuildDots = () => {
-      if (!isMounted) return
-      const nextDots = buildDots(window.innerWidth, window.innerHeight)
-      const positions = new Map()
-
-      scaleTargetsRef.current.clear()
-      scaleCurrentRef.current.clear()
-
-      nextDots.forEach((dot) => {
-        positions.set(dot.id, { x: dot.x, y: dot.y })
-        scaleTargetsRef.current.set(dot.id, 1)
-        scaleCurrentRef.current.set(dot.id, 1)
-      })
-
-      dotPositionsRef.current = positions
-      setDots(nextDots)
-      wakeRef.current(true)
-    }
-
-    rebuildDots()
-    window.addEventListener('resize', rebuildDots)
-
-    return () => {
-      isMounted = false
-      window.removeEventListener('resize', rebuildDots)
-    }
-  }, [])
-
-  useEffect(() => {
-    const rotation = rotationRef.current
+    const rotation = { x: 0, y: 0, targetX: 0, targetY: 0 }
+    const cursor = { x: 0, y: 0, active: false }
     const farRange = proximityDistance > 0 ? proximityDistance * 2 : 200
+    // Click / tap ripples: { x, y, start (ms), strength }
+    let ripples = []
+    let dots = []
     let frameId = null
     let targetsDirty = false
+    let needsDraw = true
+    let wasRippling = false
+    let ratio = 1
 
     const updateScaleTargets = () => {
-      const cursor = cursorRef.current
-      if (!cursor.active) return
-
-      dotPositionsRef.current.forEach((pos, id) => {
-        const distance = Math.hypot(pos.x - cursor.x, pos.y - cursor.y)
+      dots.forEach((dot) => {
+        if (!cursor.active) {
+          dot.target = 1
+          return
+        }
+        const distance = Math.hypot(dot.x - cursor.x, dot.y - cursor.y)
         let targetScale
 
         if (distance <= proximityDistance) {
@@ -109,11 +94,68 @@ export default function DotGrid({
           targetScale = 1 - scaleDelta * farFactor
         }
 
-        scaleTargetsRef.current.set(id, clamp(targetScale, 1 - scaleDelta, 1 + scaleDelta))
+        dot.target = clamp(targetScale, 1 - scaleDelta, 1 + scaleDelta)
       })
     }
 
-    const animate = () => {
+    // Ripple (LOOK.effects.ripple, read live): a wave front travels out from the pointer; dots it
+    // passes move out then back (the wave's slope), grow and light up (its peak). Each wave
+    // fades over `life`; ripples add up.
+    const ripple = { dx: 0, dy: 0, peak: 0 }
+    const rippleAt = (dot, now) => {
+      const settings = effects.ripple
+      ripple.dx = 0
+      ripple.dy = 0
+      ripple.peak = 0
+      for (let i = 0; i < ripples.length; i++) {
+        const r = ripples[i]
+        const age = (now - r.start) / 1000
+        const fade = 1 - age / settings.life
+        if (fade <= 0) continue
+        const rx = dot.x - r.x
+        const ry = dot.y - r.y
+        const distance = Math.hypot(rx, ry) || 1
+        const u = (distance - age * settings.speed) / Math.max(settings.width, 1)
+        if (u > 3 || u < -3) continue
+        const bell = Math.exp(-u * u)
+        const strength = r.strength * fade * fade
+        // -u * bell peaks at 0.43 (u = -0.71): x 2.33 = 1 = full push
+        const push = -u * bell * 2.33 * settings.push * strength
+        ripple.dx += (rx / distance) * push
+        ripple.dy += (ry / distance) * push
+        ripple.peak += bell * strength
+      }
+      ripple.peak = Math.min(ripple.peak, 1.5)
+      return ripple
+    }
+
+    const draw = (now, rippling) => {
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = '#fff'
+      const { grow, glow } = effects.ripple
+      const radius = DOT_SIZE / 2
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i]
+        let { x, y } = dot
+        let size = radius * dot.scale
+        let alpha = DOT_ALPHA
+        if (rippling) {
+          const r = rippleAt(dot, now)
+          x += r.dx
+          y += r.dy
+          size *= 1 + r.peak * grow
+          alpha = Math.min(DOT_ALPHA + r.peak * glow, 1)
+        }
+        ctx.globalAlpha = alpha
+        ctx.beginPath()
+        ctx.arc(x, y, size, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.globalAlpha = 1
+    }
+
+    const animate = (now = performance.now()) => {
       if (targetsDirty) {
         updateScaleTargets()
         targetsDirty = false
@@ -123,30 +165,42 @@ export default function DotGrid({
       rotation.y += (rotation.targetY - rotation.y) * reactionSpeed
       let moving = Math.abs(rotation.targetX - rotation.x) > SETTLE_EPSILON ||
         Math.abs(rotation.targetY - rotation.y) > SETTLE_EPSILON
+      container.style.transform = `perspective(1300px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
 
-      dotElementsRef.current.forEach((element, id) => {
-        const target = scaleTargetsRef.current.get(id) ?? 1
-        const current = scaleCurrentRef.current.get(id) ?? 1
-        if (Math.abs(target - current) <= SETTLE_EPSILON) return
-        const next = current + (target - current) * reactionSpeed
-        scaleCurrentRef.current.set(id, next)
-        element.style.transform = `translate(-50%, -50%) scale(${next})`
+      dots.forEach((dot) => {
+        if (Math.abs(dot.target - dot.scale) <= SETTLE_EPSILON) return
+        dot.scale += (dot.target - dot.scale) * reactionSpeed
         moving = true
       })
 
-      if (containerRef.current) {
-        containerRef.current.style.transform = `perspective(1300px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
-      }
+      const life = effects.ripple.life * 1000
+      ripples = ripples.filter((r) => now - r.start < life)
+      const rippling = ripples.length > 0
+      // Redraw while anything changes, and once more after the last ripple (to clear it)
+      if (moving || rippling || wasRippling || needsDraw) draw(now, rippling)
+      needsDraw = false
+      wasRippling = rippling
 
-      // Sleep once everything has settled; input wakes the loop again
-      frameId = moving ? requestAnimationFrame(animate) : null
+      frameId = moving || rippling ? requestAnimationFrame(animate) : null
     }
 
     const wake = (recomputeTargets = false) => {
       if (recomputeTargets) targetsDirty = true
       if (frameId == null) frameId = requestAnimationFrame(animate)
     }
-    wakeRef.current = wake
+
+    const resize = () => {
+      const width = window.innerWidth
+      const height = window.innerHeight
+      ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO)
+      canvas.width = Math.round(width * ratio)
+      canvas.height = Math.round(height * ratio)
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      dots = buildDots(width, height)
+      needsDraw = true
+      wake(true)
+    }
 
     const handleWindowMouseMove = (event) => {
       const width = window.innerWidth
@@ -154,41 +208,48 @@ export default function DotGrid({
       const relativeX = clamp(width > 0 ? event.clientX / width : 0, 0, 1)
       const relativeY = clamp(height > 0 ? event.clientY / height : 0, 0, 1)
 
-      cursorRef.current.x = event.clientX
-      cursorRef.current.y = event.clientY
-      cursorRef.current.active = true
+      cursor.x = event.clientX
+      cursor.y = event.clientY
+      cursor.active = true
 
       rotation.targetY = (relativeX - 0.5) * MAX_ROTATION_DEGREES * 2
       rotation.targetX = (0.5 - relativeY) * MAX_ROTATION_DEGREES * 2
       wake(true)
     }
 
-    const resetTargets = () => {
-      rotation.targetX = 0
-      rotation.targetY = 0
-      cursorRef.current.active = false
-      scaleTargetsRef.current.forEach((_, id) => scaleTargetsRef.current.set(id, 1))
-      wake()
-    }
-
     // Flatten the grid when the pointer leaves the page (relatedTarget is null
     // only when leaving the window; window 'mouseleave' never fires)
     const handleMouseOut = (event) => {
-      if (!event.relatedTarget) resetTargets()
+      if (event.relatedTarget) return
+      rotation.targetX = 0
+      rotation.targetY = 0
+      cursor.active = false
+      wake(true)
     }
 
+    // Every click / tap (capture: links and buttons too). detail 0 = keyboard "click", no position.
+    // Faster spin = stronger ripple (energy read at the click)
+    const handleClick = (event) => {
+      if (!event.detail) return
+      const strength = 1 + effects.ripple.boost * clamp(gyroSpin.energy, 0, 1)
+      ripples.push({ x: event.clientX, y: event.clientY, start: performance.now(), strength })
+      if (ripples.length > MAX_RIPPLES) ripples.shift()
+      wake()
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
     window.addEventListener('mousemove', handleWindowMouseMove)
+    window.addEventListener('click', handleClick, true)
     document.addEventListener('mouseout', handleMouseOut)
-    wake(true)
 
     return () => {
       if (frameId != null) cancelAnimationFrame(frameId)
-      wakeRef.current = () => {}
+      window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', handleWindowMouseMove)
+      window.removeEventListener('click', handleClick, true)
       document.removeEventListener('mouseout', handleMouseOut)
-      if (containerRef.current) {
-        containerRef.current.style.transform = ''
-      }
+      container.style.transform = ''
     }
   }, [reactionSpeed, proximityDistance, scaleDelta])
 
@@ -211,39 +272,7 @@ export default function DotGrid({
         willChange: 'transform'
       }}
     >
-      {dots.length > 0 ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 9999
-          }}
-        >
-          {dots.map((dot) => (
-            <div
-              key={dot.id}
-              ref={(el) => {
-                if (el) {
-                  dotElementsRef.current.set(dot.id, el)
-                } else {
-                  dotElementsRef.current.delete(dot.id)
-                }
-              }}
-              style={{
-                position: 'absolute',
-                left: `${dot.x}px`,
-                top: `${dot.y}px`,
-                width: DOT_SIZE,
-                height: DOT_SIZE,
-                background: DOT_COLOR,
-                borderRadius: '50%',
-                transform: 'translate(-50%, -50%) scale(1)'
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
+      <canvas ref={canvasRef} aria-hidden="true" style={{ position: 'absolute', left: 0, top: 0, display: 'block', pointerEvents: 'none' }} />
     </div>
   )
 }
