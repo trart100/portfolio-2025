@@ -34,6 +34,11 @@ export default function GyroVisual() {
     const frozenParam = params.get('t')
     const frozen = frozenParam != null && frozenParam !== '' ? parseFloat(frozenParam) : null
     const forcedParam = parseInt(params.get('q'), 10)
+    // Touch devices (phones, often 90-120 Hz screens): the 3D renders at most 30 times a second
+    // (the page itself keeps the screen's rate) and at a pixel density of at most 1.5
+    const touch = window.matchMedia('(pointer: coarse)').matches
+    const MIN_FRAME_MS = touch ? 1000 / 30 - 4 : 0 // - 4: rAF timing jitter
+    const MAX_PIXEL_RATIO = touch ? 1.5 : 2
 
     // Same signal the video used to send, so the Preloader can finish
     const sendReady = () => {
@@ -75,7 +80,7 @@ export default function GyroVisual() {
           }
 
           const box = canvas.parentElement
-          // Whole number of screen pixels (pixel density capped at 2), and a CSS size that
+          // Whole number of screen pixels (pixel density capped at 2, touch 1.5), and a CSS size that
           // matches exactly, so the browser never stretches the canvas. Absolutely positioned
           // at the box's corner so its rounded size can't resize (and shift) the box.
           canvas.style.position = 'absolute'
@@ -85,7 +90,7 @@ export default function GyroVisual() {
           let resolution = 1
           const resize = () => {
             const rect = box.getBoundingClientRect()
-            const ratio = Math.min(window.devicePixelRatio || 1, 2) * resolution
+            const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO) * resolution
             const width = Math.max(1, Math.round(rect.width * ratio))
             const height = Math.max(1, Math.round(rect.height * ratio))
             canvas.style.width = `${width / ratio}px`
@@ -118,7 +123,11 @@ export default function GyroVisual() {
           gyro.quality = quality
 
           const begin = performance.now()
+          let lastRender = -Infinity
           const loop = (now) => {
+            frameId = requestAnimationFrame(loop)
+            if (now - lastRender < MIN_FRAME_MS) return
+            lastRender = now
             let seconds = (now - begin) / 1000
             if (gyroClock.seconds != null) seconds = gyroClock.seconds
             else if (Number.isFinite(frozen)) seconds = frozen
@@ -143,7 +152,6 @@ export default function GyroVisual() {
             // Watch median of timed frames (ms), > 20 = step down
             const watched = quality.getWatched()
             if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
-            frameId = requestAnimationFrame(loop)
           }
           frameId = requestAnimationFrame(loop)
         })
