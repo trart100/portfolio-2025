@@ -11,6 +11,13 @@
   --menu-btn-height: 92px;
 }
 
+/* Text selection: see-through grey (clicking to spin the 3D often selects text), so the visual
+   shows through instead of the browser's blue block */
+::selection{
+  background:rgba(110,110,110,0.45);
+  color:#fff;
+}
+
 .preloader-root{
   position:fixed;
   inset:0;
