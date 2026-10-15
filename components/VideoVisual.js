@@ -1,25 +1,24 @@
 import { useEffect, useRef } from 'react'
 import GyroVisual from './GyroVisual'
+import { gyroPointer } from '../lib/gyro/pointer'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 const LERP = 0.15
-const SETTLE_PX = 0.01
+const SETTLE = 0.0005
 
-const toTransform = (x, y) => `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+const CENTERED = 'translate(-50%, -50%)'
 
-// The background visual: the real-time 3D (GyroVisual), drifting a little with the mouse.
-export default function VideoVisual({ movementIntensity = 18 }) {
+// The background visual: the real-time 3D (GyroVisual), centred on whole screen pixels.
+// Mouse drift: the eased mouse position goes to the 3D (gyroPointer), where the glass and the
+// gold move towards it by their own amounts (LOOK.drift); the box itself stays put.
+export default function VideoVisual() {
   const wrapRef = useRef(null)
 
-  // Parallax: ease the box toward an offset based on the mouse position.
-  // Written straight to the DOM (no React re-render) and the loop sleeps when settled.
-  // Every position is snapped to whole screen pixels (keeps the grain crisp).
   useEffect(() => {
     const el = wrapRef.current
-    if (!el || movementIntensity <= 0) return undefined
+    if (!el) return undefined
 
     const target = { x: 0, y: 0 }
-    const current = { x: 0, y: 0 }
     let frameId = null
 
     // One whole-pixel translate from the corner. Percentages (left 50%, translate -50%)
@@ -29,22 +28,19 @@ export default function VideoVisual({ movementIntensity = 18 }) {
       const snap = (value) => Math.round(value * dpr) / dpr
       const rect = el.getBoundingClientRect()
       const page = document.documentElement
-      const x = snap((page.clientWidth - rect.width) / 2 + current.x)
-      const y = snap((page.clientHeight - rect.height) / 2 + current.y)
       el.style.left = '0px'
       el.style.top = '0px'
-      el.style.transform = `translate(${x}px, ${y}px)`
+      el.style.transform = `translate(${snap((page.clientWidth - rect.width) / 2)}px, ${snap((page.clientHeight - rect.height) / 2)}px)`
     }
 
     const animate = () => {
-      current.x += (target.x - current.x) * LERP
-      current.y += (target.y - current.y) * LERP
-      const settled = Math.abs(target.x - current.x) < SETTLE_PX && Math.abs(target.y - current.y) < SETTLE_PX
+      gyroPointer.x += (target.x - gyroPointer.x) * LERP
+      gyroPointer.y += (target.y - gyroPointer.y) * LERP
+      const settled = Math.abs(target.x - gyroPointer.x) < SETTLE && Math.abs(target.y - gyroPointer.y) < SETTLE
       if (settled) {
-        current.x = target.x
-        current.y = target.y
+        gyroPointer.x = target.x
+        gyroPointer.y = target.y
       }
-      place()
       frameId = settled ? null : requestAnimationFrame(animate)
     }
 
@@ -55,23 +51,18 @@ export default function VideoVisual({ movementIntensity = 18 }) {
     const handleMouseMove = (event) => {
       const width = window.innerWidth || 1
       const height = window.innerHeight || 1
-      const relativeX = (event.clientX / width - 0.5) * 2
-      const relativeY = (event.clientY / height - 0.5) * 2
-      target.x = clamp(relativeX, -1, 1) * movementIntensity
-      target.y = clamp(relativeY, -1, 1) * movementIntensity
-      wake()
-    }
-
-    const release = () => {
-      target.x = 0
-      target.y = 0
+      target.x = clamp((event.clientX / width - 0.5) * 2, -1, 1)
+      target.y = clamp((event.clientY / height - 0.5) * 2, -1, 1)
       wake()
     }
 
     // Recenter only when the pointer actually leaves the page (mouseout bubbles
     // from every element; relatedTarget is null only when leaving the window)
     const handleMouseOut = (event) => {
-      if (!event.relatedTarget) release()
+      if (event.relatedTarget) return
+      target.x = 0
+      target.y = 0
+      wake()
     }
 
     window.addEventListener('mousemove', handleMouseMove)
@@ -90,13 +81,15 @@ export default function VideoVisual({ movementIntensity = 18 }) {
       document.removeEventListener('mouseout', handleMouseOut)
       window.removeEventListener('resize', place)
       layoutObserver.disconnect()
+      gyroPointer.x = 0
+      gyroPointer.y = 0
       el.style.left = ''
       el.style.top = ''
     }
-  }, [movementIntensity])
+  }, [])
 
   return (
-    <div ref={wrapRef} className="video-visual" style={{ transform: toTransform(0, 0) }}>
+    <div ref={wrapRef} className="video-visual" style={{ transform: CENTERED }}>
       <GyroVisual />
     </div>
   )

@@ -95,7 +95,7 @@ export default function GyroVisual() {
             const height = Math.max(1, Math.round(rect.height * ratio))
             canvas.style.width = `${width / ratio}px`
             canvas.style.height = `${height / ratio}px`
-            gyro.setSize(width, height)
+            gyro.setSize(width, height, height / ratio)
           }
           resize()
           observer = new ResizeObserver(resize)

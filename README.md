@@ -59,7 +59,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
 - `?q=1..5` forces a quality level (see `lib/gyro/quality.js`); without it the level is
   picked automatically (not with `&t` / `&ref`)
 
-- `components/GyroVisual.js` — canvas wrapper (inside `VideoVisual`, which adds the mouse-drift parallax);
+- `components/GyroVisual.js` — canvas wrapper (inside `VideoVisual`, which centres it and feeds the mouse position to `lib/gyro/pointer.js`; the scene moves the glass and the gold towards the mouse by their own amounts, `LOOK.drift`, "Mouse drift" in `?gui`);
   loads the scene on demand, rebuilds it after a lost WebGL context
 - `components/GyroReference.js` — the `?ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
