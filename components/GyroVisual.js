@@ -123,6 +123,8 @@ export default function GyroVisual() {
             if (gyroClock.seconds != null) seconds = gyroClock.seconds
             else if (Number.isFinite(frozen)) seconds = frozen
             if (quality.isMeasuring()) {
+              // Drain the frames the GPU still has queued first, so only this frame is timed
+              gyro.finish()
               const t0 = performance.now()
               gyro.render(seconds)
               gyro.finish()
@@ -138,6 +140,9 @@ export default function GyroVisual() {
               canvas.dataset.quality = label
               canvas.dataset.levels = `${canvas.dataset.levels ? `${canvas.dataset.levels} ` : ''}${label}@${Math.round(now)}`
             }
+            // Watch median of timed frames (ms), > 20 = step down
+            const watched = quality.getWatched()
+            if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
             frameId = requestAnimationFrame(loop)
           }
           frameId = requestAnimationFrame(loop)
