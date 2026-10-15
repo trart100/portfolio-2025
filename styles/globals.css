@@ -103,6 +103,12 @@ a {
 
 .page-root{ min-height:100%; width:100%; overflow-x:hidden; }
 .page-root{ text-shadow: var(--ca-text); }
+/* shake on touch (SpeedEffects.js, mode a): text blocks move together; only while shaking, since
+   a translate on an element would also pin any position:fixed child to it */
+html.fx-shake .title, html.fx-shake .animated-information, html.fx-shake .manifesto-p,
+html.fx-shake .contact-items .mini-text, html.fx-shake .menu-btn, html.fx-shake #dot-grid{
+  translate: var(--shake-x, 0px) var(--shake-y, 0px);
+}
 .page-content{ width:100%; position:relative; z-index:1; }
 
 .container{

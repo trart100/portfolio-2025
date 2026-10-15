@@ -56,7 +56,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
   Blend (crossfade slider), Difference (black = identical). Space = play/pause,
   arrows = ±1 frame (Shift = ±10), keys 1–4 = modes, "Site view" shows the page again.
   Combine with the panel: `?gui&ref`
-- `?ca=off|a|b` picks the chromatic aberration mode (see `lib/gyro/chroma.js`)
+- `?fx=auto|off|a|b` picks how the speed effects are drawn (see `lib/gyro/effects.js`; `?ca=` also works)
 - `?q=1..5` forces a quality level (see `lib/gyro/quality.js`); without it the level is
   picked automatically (not with `&t` / `&ref`)
 
@@ -65,7 +65,7 @@ Dev aids (the old `?3d` switch is still accepted and changes nothing):
 - `components/GyroReference.js` — the `?ref` comparison tool (loaded only with `&ref`)
 - `lib/gyro/clock.js` — shared time override (the comparison tool drives the 3D from the video)
 - `lib/gyro/spin.js` — click / tap spin-up: each click adds speed to the gold (adds up), the glass follows the gold's speed with a lag, both ease back to the normal loop (`LOOK.spin`, "Click spin" in `?gui`; off with `?t` / `?ref`)
-- `lib/gyro/chroma.js` + `components/ChromaticAberration.js` — chromatic aberration driven by the spin speed (`gyroSpin.energy`, 0..1): red left, blue right, `LOOK.chroma` ("Chromatic aberration" in `?gui`, with a hold-energy test switch; C key cycles modes). Mode `a` = split in the 3D's final shader pass + red/blue text-shadow on the text (`--ca-text`); mode `b` = one SVG filter on `<html>` (true split of the whole page, only while the amount is above 0); `?ca=off|a|b` forces one
+- `lib/gyro/effects.js` + `components/SpeedEffects.js` — effects driven by the spin speed (`gyroSpin.energy`, 0..1): chromatic aberration (red left, blue right) and shake, each strength x energy^curve (`LOOK.effects`, "Speed effects" in `?gui` with a hold-energy test switch; C key cycles modes). Mode `auto` (default) = `b` on desktop, `a` on touch. `b` = one SVG filter on `<html>` (true split + shake of the whole page, only while above 0); `a` = in the 3D's final shader pass + red/blue text-shadow (`--ca-text`) and a CSS translate on the text blocks (`html.fx-shake`)
 - `lib/gyro/config.js` — values taken from the Blender file (camera, rings, gold, keyframes, look)
 - `lib/gyro/scene.js` — the three.js scene, the loop and the final pass (a depth pre-pass finds
   the front-most surface at every pixel; the front layer is drawn sharp and everything behind

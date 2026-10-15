@@ -8,7 +8,7 @@ import ShowreelOverlay from '../components/ShowreelOverlay'
 import AnimatedParagraph from '../components/AnimatedParagraph'
 import DotGrid from '../components/DotGrid'
 import AnimatedInformation from '../components/AnimatedInformation'
-import ChromaticAberration from '../components/ChromaticAberration'
+import SpeedEffects from '../components/SpeedEffects'
 
 
 const manifestoParagraphs = [
@@ -194,7 +194,7 @@ export default function Home() {
 
   return (
     <div className="page-root">
-      <ChromaticAberration />
+      <SpeedEffects />
       <Cursor />
       <Menu />
 
