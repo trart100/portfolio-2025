@@ -352,7 +352,12 @@ a {
   /* Prevent any default browser video styling */
   border:none;
   outline:none;
+  /* Invisible until it really plays (ShowreelOverlay adds .is-shown; duration set inline) */
+  opacity:0;
+  transition-property:opacity;
+  transition-timing-function:ease;
 }
+.overlay-video.is-shown{ opacity:1; }
 
 .overlay-video-wrap{
   position:relative;
