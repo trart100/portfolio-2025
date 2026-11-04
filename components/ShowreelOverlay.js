@@ -7,16 +7,21 @@ import { track, addShowreelWatched } from '../lib/analytics'
 const VIMEO_ORIGIN = 'https://player.vimeo.com'
 const PROGRESS_STEPS = [25, 50, 75, 95]
 
-// Opening: the player loads at once but stays invisible and paused (autoplay=0). Only when
-// the overlay is fully black is it told to play, and it fades in once it really plays, so the
-// sound never starts over the page and the reel is seen from its first frame (before 6.8.6,
-// opened from further down the page, it started ~0.5 s before the overlay was in).
+// Opening: page scrolls home, the overlay fades to black, THEN the video. The player loads at
+// once but is not drawn (visibility hidden) and stays paused (autoplay=0); only when the overlay
+// is fully black is it told to play, and it fades in once it really plays (before 6.8.6, opened
+// from further down the page, it played over the scrolling page).
+// Fades of the video are done with a black cover above it, never with opacity on the Vimeo frame
+// or the overlay while the frame is drawn: browsers draw the cross-origin frame at full strength
+// during such opacity animations (it showed over the page). See .overlay-video in globals.css.
 // If the browser blocks playback (e.g. iOS), the player is shown anyway with Vimeo's play button.
 const PLAY_RETRY_MS = 600 // ask again once if Vimeo has not started yet
 const SHOW_ANYWAY_MS = 1500 // after asking to play: show the player even if it did not start
 const READY_FALLBACK_MS = 800 // iframe loaded but no 'ready' message: treat it as ready
 const VIDEO_FADE_IN = 0.5 // s, video fading in from black
-const CLOSE_FADE = 0.3 // s, overlay and sound fading out on close
+// Close: video to black (cover), frame hidden, then the black overlay fades to the page
+const CLOSE_VIDEO_OUT = 0.18 // s
+const CLOSE_OVERLAY_OUT = 0.25 // s
 
 // On <html>: LOCK stops the page behind from scrolling (wheel/keys inside the
 // cross-origin Vimeo iframe would otherwise chain to it); OPEN hides the page chrome.
@@ -28,11 +33,12 @@ export default function ShowreelOverlay({ onClose }) {
   const closeBtnRef = useRef(null)
   const closingRef = useRef(false)
   const iframeRef = useRef(null)
+  const coverRef = useRef(null)
   const [videoScale, setVideoScale] = useState(100)
   const videoScaleRef = useRef(100)
   videoScaleRef.current = videoScale
   // Player control shared by the effects and the close handler (filled in the effect below)
-  const playerRef = useRef({ overlayIn: () => {}, fadeOut: () => {} })
+  const playerRef = useRef({ overlayIn: () => {}, fadeOut: () => {}, isShown: () => false })
 
   // The Vimeo player (postMessage API, no extra script): start / show it once the overlay is
   // in, fade its sound on close; statistics: open, how far the reel was watched, and on close
@@ -62,7 +68,11 @@ export default function ShowreelOverlay({ onClose }) {
     const show = (autoplay) => {
       if (shown || closing) return
       shown = true
+      // Draw the frame under the (still black) cover, then fade the cover away
       if (iframeRef.current) iframeRef.current.classList.add('is-shown')
+      if (coverRef.current) {
+        gsap.to(coverRef.current, { opacity: 0, duration: VIDEO_FADE_IN, ease: 'power1.inOut', delay: 0.05 })
+      }
       track('showreel_start', {
         autoplay, // false = the browser blocked playback, Vimeo's play button is shown
         wait_ms: Math.round(performance.now() - openedAt),
@@ -85,6 +95,7 @@ export default function ShowreelOverlay({ onClose }) {
       overlayIn = true
       start()
     }
+    playerRef.current.isShown = () => shown
     // Sound down with the visual fade, then pause (the overlay unmounts right after)
     playerRef.current.fadeOut = (seconds) => {
       closing = true
@@ -238,13 +249,23 @@ export default function ShowreelOverlay({ onClose }) {
     closingRef.current = true
     // Unlock while the overlay still covers the page (the scrollbar comes back unseen)
     document.documentElement.classList.remove(OPEN_CLASS, LOCK_CLASS)
-    playerRef.current.fadeOut(CLOSE_FADE)
-    // Quick fade: starts at once, eases into the page
-    gsap.to(ref.current, {
-      duration: CLOSE_FADE,
+    const videoOn = playerRef.current.isShown()
+    // Sound fades over the whole close (or, if nothing plays yet, the start is cancelled)
+    playerRef.current.fadeOut(videoOn ? CLOSE_VIDEO_OUT + CLOSE_OVERLAY_OUT : 0)
+    // cancel a still-running fade-in (e.g. Esc pressed early)
+    gsap.killTweensOf(ref.current, 'opacity')
+    const tl = gsap.timeline()
+    if (videoOn && coverRef.current) {
+      // 1. video to black under our cover, then stop drawing the frame
+      gsap.killTweensOf(coverRef.current)
+      tl.to(coverRef.current, { opacity: 1, duration: CLOSE_VIDEO_OUT, ease: 'power1.in' })
+      tl.add(() => { if (iframeRef.current) iframeRef.current.classList.remove('is-shown') })
+    }
+    // 2. the black overlay fades to the page: starts at once, eases into the page
+    tl.to(ref.current, {
+      duration: CLOSE_OVERLAY_OUT,
       opacity: 0,
       ease: 'power2.out',
-      overwrite: 'auto', // cancels a still-running fade-in (e.g. Esc pressed early)
       onComplete: () => {
         gsap.set(ref.current, { visibility: 'hidden' })
         // notify other listeners (Menu) so they can unselect the Showreel button
@@ -297,9 +318,9 @@ export default function ShowreelOverlay({ onClose }) {
             style={{
               transform: `scale(${videoScale / 100})`,
               transformOrigin: 'center center',
-              transitionDuration: `${VIDEO_FADE_IN}s`,
             }}
           />
+          <div ref={coverRef} className="overlay-video-cover" aria-hidden />
           <button ref={closeBtnRef} className="overlay-close mini-text" onClick={handleClose} aria-label="Close showreel">×</button>
           <div className="video-zoom-controls">
             <button className="video-zoom-btn" onClick={handleZoomOut} aria-label="Zoom out">−</button>

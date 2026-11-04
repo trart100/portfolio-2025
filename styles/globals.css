@@ -352,12 +352,20 @@ a {
   /* Prevent any default browser video styling */
   border:none;
   outline:none;
-  /* Invisible until it really plays (ShowreelOverlay adds .is-shown; duration set inline) */
-  opacity:0;
-  transition-property:opacity;
-  transition-timing-function:ease;
+  /* Not drawn at all until the overlay is black and the reel plays (ShowreelOverlay adds
+     .is-shown). Not opacity: browsers draw the cross-origin Vimeo frame at full strength while
+     an opacity on it or the overlay is animating (seen 2026-11, Chrome/Brave on Windows) */
+  visibility:hidden;
 }
-.overlay-video.is-shown{ opacity:1; }
+.overlay-video.is-shown{ visibility:visible; }
+/* Black layer over the video: the video fades in / out by fading this, never the frame itself */
+.overlay-video-cover{
+  position:absolute;
+  inset:0;
+  background:#000;
+  pointer-events:none;
+  z-index:1; /* above the video, below the close / zoom buttons (1300) */
+}
 
 .overlay-video-wrap{
   position:relative;
