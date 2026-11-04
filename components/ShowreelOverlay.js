@@ -16,16 +16,22 @@ const PROGRESS_STEPS = [25, 50, 75, 95]
 // during such opacity animations (it showed over the page). See .overlay-video in globals.css.
 // If the browser blocks playback (e.g. iOS), the player is shown anyway with Vimeo's play button.
 const PLAY_RETRY_MS = 600 // ask again once if Vimeo has not started yet
-// Shown only once frames really run (first timeupdate past 0): Vimeo's 'play' event comes ~0.7 s
-// earlier, while it still buffers behind its grey poster + spinner (user report 6.8.7)
+// While it loads, the overlay shows the reel's own first frame (public/assets/showreel-first-frame.jpg,
+// frame 0 of the original file: the dark rings) with the site's pulsing preloader rings on it. Vimeo
+// itself shows its bright thumbnail (the taxfix shot) while buffering, so it stays hidden until its
+// frames really run; then the still crossfades into the playing reel. (On Vimeo only frame 0 is the
+// rings; from ~0.1 s the reel is on the taxfix phone shot - that cut is the reel itself. Note: the
+// local file ../Showreel_1920x1080_2025_1.mp4 is a different edit; only its frame 0 matches Vimeo's.)
+// Shown only once frames really run (timeupdate past FIRST_FRAME_S): Vimeo's 'play' event comes
+// ~0.7 s earlier, while it still buffers behind that thumbnail + spinner (user report 6.8.7)
 // Playback blocked (e.g. iOS): Vimeo answers the play request with an 'error' event
 // (NotAllowedError) -> the player is shown at once with its play button. If Vimeo does not answer
 // at all, show it after SHOW_ANYWAY_MS (1.5 s was too short: a slow start was taken for blocked)
 const SHOW_ANYWAY_MS = 4000
-const BUFFER_MAX_MS = 8000 // 'play' came but no frames yet (slow network): show the player after this
+const BUFFER_MAX_MS = 15000 // 'play' came but no frames yet (slow network): show the player after this
 const FIRST_FRAME_S = 0.05 // playback time that counts as "frames are running"
 const READY_FALLBACK_MS = 800 // iframe loaded but no 'ready' message: treat it as ready
-const VIDEO_FADE_IN = 0.5 // s, video fading in from black
+const VIDEO_FADE_IN = 0.5 // s, the still (first frame) crossfading into the running video
 // Close: video to black (cover), frame hidden, then the black overlay fades to the page
 const CLOSE_VIDEO_OUT = 0.18 // s
 const CLOSE_OVERLAY_OUT = 0.25 // s
@@ -278,8 +284,10 @@ export default function ShowreelOverlay({ onClose }) {
     gsap.killTweensOf(ref.current, 'opacity')
     const tl = gsap.timeline()
     if (videoOn && coverRef.current) {
-      // 1. video to black under our cover, then stop drawing the frame
+      // 1. video to black under our cover (plain black now: no still, no rings), then stop
+      //    drawing the frame
       gsap.killTweensOf(coverRef.current)
+      coverRef.current.classList.add('is-closing')
       tl.to(coverRef.current, { opacity: 1, duration: CLOSE_VIDEO_OUT, ease: 'power1.in' })
       tl.add(() => { if (iframeRef.current) iframeRef.current.classList.remove('is-shown') })
     }
@@ -342,7 +350,14 @@ export default function ShowreelOverlay({ onClose }) {
               transformOrigin: 'center center',
             }}
           />
-          <div ref={coverRef} className="overlay-video-cover" aria-hidden />
+          {/* The reel's first frame + the site's preloader rings while Vimeo loads */}
+          <div ref={coverRef} className="overlay-video-cover" aria-hidden>
+            <div className="preloader-content overlay-loading">
+              <div className="preloader-circle preloader-circle--large" />
+              <div className="preloader-circle preloader-circle--medium" />
+              <div className="preloader-circle preloader-circle--small" />
+            </div>
+          </div>
           <button ref={closeBtnRef} className="overlay-close mini-text" onClick={handleClose} aria-label="Close showreel">×</button>
           <div className="video-zoom-controls">
             <button className="video-zoom-btn" onClick={handleZoomOut} aria-label="Zoom out">−</button>
