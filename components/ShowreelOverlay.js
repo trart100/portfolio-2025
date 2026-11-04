@@ -9,29 +9,22 @@ const PROGRESS_STEPS = [25, 50, 75, 95]
 
 // Opening: page scrolls home, the overlay fades to black, THEN the video. The player loads at
 // once but is not drawn (visibility hidden) and stays paused (autoplay=0); only when the overlay
-// is fully black is it told to play, and it fades in once it really plays (before 6.8.6, opened
-// from further down the page, it played over the scrolling page).
+// is fully black is it set to the first frame, told to play and shown - Vimeo's own player,
+// buffering included (6.8.10, as asked: no still image of our own). Before 6.8.6, opened from
+// further down the page, it played over the scrolling page.
+// What Vimeo draws while it buffers before the first play is the video's thumbnail (a paused,
+// not yet played Vimeo player has no video frames at all; a seek to 0 loads nothing, tested
+// 2026-11), so the thumbnail is set to the first frame in Vimeo itself (0:00, the dark rings).
+// (Up to 6.8.5 the player autoplayed at once, behind the opening animation, so the thumbnail
+// phase was over before it was seen - but it played over the scrolling page.)
 // Fades of the video are done with a black cover above it, never with opacity on the Vimeo frame
 // or the overlay while the frame is drawn: browsers draw the cross-origin frame at full strength
 // during such opacity animations (it showed over the page). See .overlay-video in globals.css.
-// If the browser blocks playback (e.g. iOS), the player is shown anyway with Vimeo's play button.
+// If the browser blocks playback (e.g. iOS), Vimeo shows its play button.
 const PLAY_RETRY_MS = 600 // ask again once if Vimeo has not started yet
-// While it loads, the overlay shows the reel's own first frame (public/assets/showreel-first-frame.jpg,
-// frame 0 of the original file: the dark rings) with the site's pulsing preloader rings on it. Vimeo
-// itself shows its bright thumbnail (the taxfix shot) while buffering, so it stays hidden until its
-// frames really run; then the still crossfades into the playing reel. (On Vimeo only frame 0 is the
-// rings; from ~0.1 s the reel is on the taxfix phone shot - that cut is the reel itself. Note: the
-// local file ../Showreel_1920x1080_2025_1.mp4 is a different edit; only its frame 0 matches Vimeo's.)
-// Shown only once frames really run (timeupdate past FIRST_FRAME_S): Vimeo's 'play' event comes
-// ~0.7 s earlier, while it still buffers behind that thumbnail + spinner (user report 6.8.7)
-// Playback blocked (e.g. iOS): Vimeo answers the play request with an 'error' event
-// (NotAllowedError) -> the player is shown at once with its play button. If Vimeo does not answer
-// at all, show it after SHOW_ANYWAY_MS (1.5 s was too short: a slow start was taken for blocked)
-const SHOW_ANYWAY_MS = 4000
-const BUFFER_MAX_MS = 15000 // 'play' came but no frames yet (slow network): show the player after this
-const FIRST_FRAME_S = 0.05 // playback time that counts as "frames are running"
+const FIRST_FRAME_S = 0.05 // playback time that counts as "frames are running" (statistics)
 const READY_FALLBACK_MS = 800 // iframe loaded but no 'ready' message: treat it as ready
-const VIDEO_FADE_IN = 0.5 // s, the still (first frame) crossfading into the running video
+const VIDEO_FADE_IN = 0.3 // s, the black cover fading off the player
 // Close: video to black (cover), frame hidden, then the black overlay fades to the page
 const CLOSE_VIDEO_OUT = 0.18 // s
 const CLOSE_OVERLAY_OUT = 0.25 // s
@@ -75,22 +68,23 @@ export default function ShowreelOverlay({ onClose }) {
     let requestedAt = null
     let playAccepted = false // Vimeo's 'play' event: it will play, may still be buffering
     let shown = false
+    let started = false // statistics: showreel_start sent
     let closing = false
     let volume = 1 // the player's current volume (the visitor may change it); not remembered by Vimeo
     const timers = []
     const later = (fn, ms) => timers.push(setTimeout(fn, ms))
-    const show = (autoplay, why) => {
+    const show = () => {
       if (shown || closing) return
       shown = true
-      // Readable in the element inspector (also on phones): why and when the video was shown
-      if (iframeRef.current) {
-        iframeRef.current.dataset.shown = `${why}@${Math.round(performance.now() - (requestedAt || openedAt))}ms`
-      }
       // Draw the frame under the (still black) cover, then fade the cover away
       if (iframeRef.current) iframeRef.current.classList.add('is-shown')
       if (coverRef.current) {
-        gsap.to(coverRef.current, { opacity: 0, duration: VIDEO_FADE_IN, ease: 'power1.inOut', delay: 0.05 })
+        gsap.to(coverRef.current, { opacity: 0, duration: VIDEO_FADE_IN, ease: 'power1.out' })
       }
+    }
+    const trackStart = (autoplay) => {
+      if (started) return
+      started = true
       track('showreel_start', {
         autoplay, // false = the browser blocked playback, Vimeo's play button is shown
         wait_ms: Math.round(performance.now() - openedAt),
@@ -100,9 +94,8 @@ export default function ShowreelOverlay({ onClose }) {
       if (!ready || !overlayIn || requestedAt != null || closing) return
       requestedAt = performance.now()
       post({ method: 'play' })
-      later(() => { if (!shown && !playAccepted) post({ method: 'play' }) }, PLAY_RETRY_MS)
-      later(() => { if (!playAccepted) show(false, 'no-answer') }, SHOW_ANYWAY_MS)
-      later(() => show(true, 'buffer-timeout'), BUFFER_MAX_MS)
+      show() // Vimeo's player as it is, also while it buffers
+      later(() => { if (!playAccepted) post({ method: 'play' }) }, PLAY_RETRY_MS)
     }
     const markReady = () => {
       if (ready) return
@@ -151,7 +144,7 @@ export default function ShowreelOverlay({ onClose }) {
         return
       }
       if (data.event === 'play') {
-        playAccepted = true // not shown yet: frames may still be buffering
+        playAccepted = true // frames may still be buffering
         return
       }
       if (data.event === 'error') {
@@ -159,15 +152,15 @@ export default function ShowreelOverlay({ onClose }) {
         const err = data.data || {}
         // (Vimeo may send 'play' first and the refusal after it, so don't require !playAccepted)
         if (requestedAt != null && (err.method === 'play' || err.name === 'NotAllowedError')) {
-          show(false, 'blocked')
+          trackStart(false)
         }
         return
       }
       // Vimeo answers with the old name 'playProgress' (tested 2026-11); accept both
       if ((data.event === 'timeupdate' || data.event === 'playProgress') && data.data) {
         const { seconds, percent } = data.data
-        // frames really running -> fade the video in (only after we asked: autoplay is off)
-        if (requestedAt != null && seconds > FIRST_FRAME_S) show(true, 'frames')
+        // frames really running (only after we asked: autoplay is off)
+        if (requestedAt != null && seconds > FIRST_FRAME_S) trackStart(true)
         // count only normal playback (skips seeks and the loop's jump back to 0)
         if (lastSeconds != null) {
           const step = seconds - lastSeconds
@@ -284,10 +277,8 @@ export default function ShowreelOverlay({ onClose }) {
     gsap.killTweensOf(ref.current, 'opacity')
     const tl = gsap.timeline()
     if (videoOn && coverRef.current) {
-      // 1. video to black under our cover (plain black now: no still, no rings), then stop
-      //    drawing the frame
+      // 1. video to black under our cover, then stop drawing the frame
       gsap.killTweensOf(coverRef.current)
-      coverRef.current.classList.add('is-closing')
       tl.to(coverRef.current, { opacity: 1, duration: CLOSE_VIDEO_OUT, ease: 'power1.in' })
       tl.add(() => { if (iframeRef.current) iframeRef.current.classList.remove('is-shown') })
     }
@@ -350,14 +341,8 @@ export default function ShowreelOverlay({ onClose }) {
               transformOrigin: 'center center',
             }}
           />
-          {/* The reel's first frame + the site's preloader rings while Vimeo loads */}
-          <div ref={coverRef} className="overlay-video-cover" aria-hidden>
-            <div className="preloader-content overlay-loading">
-              <div className="preloader-circle preloader-circle--large" />
-              <div className="preloader-circle preloader-circle--medium" />
-              <div className="preloader-circle preloader-circle--small" />
-            </div>
-          </div>
+          {/* Plain black: fades the player in and out */}
+          <div ref={coverRef} className="overlay-video-cover" aria-hidden />
           <button ref={closeBtnRef} className="overlay-close mini-text" onClick={handleClose} aria-label="Close showreel">×</button>
           <div className="video-zoom-controls">
             <button className="video-zoom-btn" onClick={handleZoomOut} aria-label="Zoom out">−</button>

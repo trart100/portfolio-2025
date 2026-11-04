@@ -358,21 +358,15 @@ a {
   visibility:hidden;
 }
 .overlay-video.is-shown{ visibility:visible; }
-/* Layer over the video: the video fades in / out by fading this, never the frame itself.
-   While loading it shows the reel's first frame (same placement as Vimeo's video: centred,
-   contained) with the site's preloader rings; on close it turns plain black */
+/* Plain black layer over the video: the video fades in / out by fading this, never the
+   frame itself */
 .overlay-video-cover{
   position:absolute;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#000 url(/assets/showreel-first-frame.jpg) center / contain no-repeat;
+  background:#000;
   pointer-events:none;
   z-index:1; /* above the video, below the close / zoom buttons (1300) */
 }
-.overlay-video-cover.is-closing{ background-image:none; }
-.overlay-video-cover.is-closing .overlay-loading{ display:none; }
 
 .overlay-video-wrap{
   position:relative;
