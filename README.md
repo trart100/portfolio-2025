@@ -24,6 +24,16 @@ npm run build    # production build check
 - `public/assets/` — favicon, and the original background video (only the `?ref` comparison
   tool loads it; the page itself never does)
 
+## Statistics (PostHog)
+
+`lib/analytics.js` (started from `pages/_app.js` after the page has loaded; posthog-js is its own
+chunk). PostHog EU cloud, no cookies and nothing stored on the device: page views, time on page,
+clicks (autocapture) and country / city (from the IP address, on PostHog's side).
+Not tracked: localhost and Vercel previews (add `?track` to test there), visits with dev flags
+(`?gui`, `?ref`, `?tune`, `?t`, `?q`, `?fx`, `?ca`), and your own browser after one visit with
+`?notrack` (`?track` undoes it). In the console, `window.__analytics` says whether this visit is
+tracked and why not. Custom events go through `track(name, props)`.
+
 ## Scroll echo tuning
 
 The scroll "echo" (elements nudged by scroll momentum) lives in `components/Inertia.js`;
