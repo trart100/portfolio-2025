@@ -65,9 +65,7 @@ export default function DataProtection() {
       {isExpanded && (
         <div className="data-protection-content">
           <div className="data-protection-text">
-            Anonymous statistics without cookies: pages, clicks, country (PostHog, EU).
-            Accept also allows heatmaps and session replays of mouse and scroll,
-            and remembers this browser. You can change this here anytime.
+            Anonymous stats, no cookies. Accept adds heatmaps and session replays.
             <br />
             <a href="/privacy" className="data-protection-link">Privacy policy</a>
           </div>
