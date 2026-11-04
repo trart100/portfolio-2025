@@ -6,9 +6,10 @@ export default function Document() {
       <Head>
         <meta name="theme-color" content="#000" />
         <link rel="icon" type="image/png" href="/assets/gold_favico.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..700&family=Space+Grotesk:wght@300..600&display=swap" rel="stylesheet" />
+        {/* Fonts are served from this site (public/fonts, @font-face in globals.css): no request to
+            Google. Preload the Latin files so the text shows in the right font straight away. */}
+        <link rel="preload" href="/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </Head>
       <body>
         <Main />

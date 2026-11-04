@@ -40,6 +40,14 @@ adds heatmaps, session replays and a remembered browser id (localStorage, no coo
 "Decline" switches them off again and deletes PostHog's stored id. Session replays also need
 "Record user sessions" switched on in the PostHog project settings.
 
+## Privacy
+
+- `/privacy` (`pages/privacy.js`) describes everything below; keep it in sync when adding a service.
+- Fonts (Manrope, Space Grotesk) are served from `public/fonts` (`@font-face` at the top of
+  `styles/globals.css`, Latin + Latin Extended, SIL Open Font License); the page contacts no font service.
+- The Vimeo player URL carries `dnt=1` (no Vimeo tracking cookies) and loads only when the showreel opens.
+- On a first visit the page contacts only this site and PostHog's EU servers.
+
 ## Scroll echo tuning
 
 The scroll "echo" (elements nudged by scroll momentum) lives in `components/Inertia.js`;
