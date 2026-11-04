@@ -16,7 +16,14 @@ const PROGRESS_STEPS = [25, 50, 75, 95]
 // during such opacity animations (it showed over the page). See .overlay-video in globals.css.
 // If the browser blocks playback (e.g. iOS), the player is shown anyway with Vimeo's play button.
 const PLAY_RETRY_MS = 600 // ask again once if Vimeo has not started yet
-const SHOW_ANYWAY_MS = 1500 // after asking to play: show the player even if it did not start
+// Shown only once frames really run (first timeupdate past 0): Vimeo's 'play' event comes ~0.7 s
+// earlier, while it still buffers behind its grey poster + spinner (user report 6.8.7)
+// Playback blocked (e.g. iOS): Vimeo answers the play request with an 'error' event
+// (NotAllowedError) -> the player is shown at once with its play button. If Vimeo does not answer
+// at all, show it after SHOW_ANYWAY_MS (1.5 s was too short: a slow start was taken for blocked)
+const SHOW_ANYWAY_MS = 4000
+const BUFFER_MAX_MS = 8000 // 'play' came but no frames yet (slow network): show the player after this
+const FIRST_FRAME_S = 0.05 // playback time that counts as "frames are running"
 const READY_FALLBACK_MS = 800 // iframe loaded but no 'ready' message: treat it as ready
 const VIDEO_FADE_IN = 0.5 // s, video fading in from black
 // Close: video to black (cover), frame hidden, then the black overlay fades to the page
@@ -60,14 +67,19 @@ export default function ShowreelOverlay({ onClose }) {
     let ready = false
     let overlayIn = false
     let requestedAt = null
+    let playAccepted = false // Vimeo's 'play' event: it will play, may still be buffering
     let shown = false
     let closing = false
     let volume = 1 // the player's current volume (the visitor may change it); not remembered by Vimeo
     const timers = []
     const later = (fn, ms) => timers.push(setTimeout(fn, ms))
-    const show = (autoplay) => {
+    const show = (autoplay, why) => {
       if (shown || closing) return
       shown = true
+      // Readable in the element inspector (also on phones): why and when the video was shown
+      if (iframeRef.current) {
+        iframeRef.current.dataset.shown = `${why}@${Math.round(performance.now() - (requestedAt || openedAt))}ms`
+      }
       // Draw the frame under the (still black) cover, then fade the cover away
       if (iframeRef.current) iframeRef.current.classList.add('is-shown')
       if (coverRef.current) {
@@ -82,8 +94,9 @@ export default function ShowreelOverlay({ onClose }) {
       if (!ready || !overlayIn || requestedAt != null || closing) return
       requestedAt = performance.now()
       post({ method: 'play' })
-      later(() => { if (!shown) post({ method: 'play' }) }, PLAY_RETRY_MS)
-      later(() => show(false), SHOW_ANYWAY_MS)
+      later(() => { if (!shown && !playAccepted) post({ method: 'play' }) }, PLAY_RETRY_MS)
+      later(() => { if (!playAccepted) show(false, 'no-answer') }, SHOW_ANYWAY_MS)
+      later(() => show(true, 'buffer-timeout'), BUFFER_MAX_MS)
     }
     const markReady = () => {
       if (ready) return
@@ -132,14 +145,23 @@ export default function ShowreelOverlay({ onClose }) {
         return
       }
       if (data.event === 'play') {
-        if (requestedAt != null) show(true)
+        playAccepted = true // not shown yet: frames may still be buffering
+        return
+      }
+      if (data.event === 'error') {
+        // our play request was refused (autoplay blocked): show Vimeo's own play button now
+        const err = data.data || {}
+        // (Vimeo may send 'play' first and the refusal after it, so don't require !playAccepted)
+        if (requestedAt != null && (err.method === 'play' || err.name === 'NotAllowedError')) {
+          show(false, 'blocked')
+        }
         return
       }
       // Vimeo answers with the old name 'playProgress' (tested 2026-11); accept both
       if ((data.event === 'timeupdate' || data.event === 'playProgress') && data.data) {
-        // playing for real -> fade the video in (only after we asked: autoplay is off)
-        if (requestedAt != null) show(true)
         const { seconds, percent } = data.data
+        // frames really running -> fade the video in (only after we asked: autoplay is off)
+        if (requestedAt != null && seconds > FIRST_FRAME_S) show(true, 'frames')
         // count only normal playback (skips seeks and the loop's jump back to 0)
         if (lastSeconds != null) {
           const step = seconds - lastSeconds
