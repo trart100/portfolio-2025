@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
+import { track } from '../lib/analytics'
 
 const NAV_ITEMS = [
   { name: 'showreel', label: 'Showreel' },
@@ -79,6 +80,7 @@ export default function Menu() {
   const [isSmallScreen, setIsSmallScreen] = useState(false)
 
   const handleSelect = ({ name, target }) => {
+    track('menu_click', { item: name })
     setActive(name)
     setOpen(false)
     if (target) {

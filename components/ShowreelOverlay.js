@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
+import { track, addShowreelWatched } from '../lib/analytics'
+
+const VIMEO_ORIGIN = 'https://player.vimeo.com'
+const PROGRESS_STEPS = [25, 50, 75, 95]
 
 // On <html>: LOCK stops the page behind from scrolling (wheel/keys inside the
 // cross-origin Vimeo iframe would otherwise chain to it); OPEN hides the page chrome.
@@ -10,7 +14,72 @@ export default function ShowreelOverlay({ onClose }) {
   const ref = useRef(null)
   const closeBtnRef = useRef(null)
   const closingRef = useRef(false)
+  const iframeRef = useRef(null)
   const [videoScale, setVideoScale] = useState(100)
+  const videoScaleRef = useRef(100)
+  videoScaleRef.current = videoScale
+
+  // Statistics: open, how far the reel was watched (Vimeo's postMessage API, no extra script),
+  // and on close: time open, seconds watched, furthest point, zoom
+  useEffect(() => {
+    const openedAt = performance.now()
+    const steps = PROGRESS_STEPS.slice()
+    let watched = 0
+    let maxPercent = 0
+    let lastSeconds = null
+    track('showreel_open')
+
+    const post = (msg) => {
+      const win = iframeRef.current && iframeRef.current.contentWindow
+      if (win) win.postMessage(JSON.stringify(msg), VIMEO_ORIGIN)
+    }
+    const onMessage = (e) => {
+      if (e.origin !== VIMEO_ORIGIN) return
+      if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return
+      let data = e.data
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data) } catch (err) { return }
+      }
+      if (!data || !data.event) return
+      if (data.event === 'ready') {
+        subscribe()
+        return
+      }
+      // Vimeo answers with the old name 'playProgress' (tested 2026-11); accept both
+      if ((data.event === 'timeupdate' || data.event === 'playProgress') && data.data) {
+        const { seconds, percent } = data.data
+        // count only normal playback (skips seeks and the loop's jump back to 0)
+        if (lastSeconds != null) {
+          const step = seconds - lastSeconds
+          if (step > 0 && step < 1.5) watched += step
+        }
+        lastSeconds = seconds
+        const p = Math.round(percent * 100)
+        if (p > maxPercent) maxPercent = p
+        while (steps.length && maxPercent >= steps[0]) {
+          track('showreel_progress', { percent: steps.shift() })
+        }
+      }
+    }
+    // Subscribe on 'ready' and on iframe load ('ready' did not arrive in tests); a double
+    // subscription is harmless: repeated times give step 0 and are not counted
+    const subscribe = () => post({ method: 'addEventListener', value: 'timeupdate' })
+    const iframe = iframeRef.current
+    window.addEventListener('message', onMessage)
+    if (iframe) iframe.addEventListener('load', subscribe)
+
+    return () => {
+      window.removeEventListener('message', onMessage)
+      if (iframe) iframe.removeEventListener('load', subscribe)
+      addShowreelWatched(watched)
+      track('showreel_close', {
+        open_s: Math.round((performance.now() - openedAt) / 1000),
+        watched_s: Math.round(watched),
+        max_percent: maxPercent,
+        zoom: videoScaleRef.current,
+      })
+    }
+  }, [])
 
   useEffect(() => {
     // Reset scale on window resize
@@ -125,6 +194,7 @@ export default function ShowreelOverlay({ onClose }) {
       <div className="overlay-contents">
         <div className="overlay-video-wrap">
           <iframe
+            ref={iframeRef}
             src="https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&controls=1"
             className="overlay-video"
             frameBorder="0"
