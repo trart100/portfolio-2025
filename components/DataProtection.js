@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { setConsent } from '../lib/analytics'
 
 export default function DataProtection() {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -25,7 +26,9 @@ export default function DataProtection() {
     // Store in localStorage
     localStorage.setItem('datenschutz-consent', consent.toString())
     localStorage.setItem('datenschutz-timestamp', new Date().toISOString())
-    
+    // Statistics: Accept adds heatmaps / session replays (lib/analytics.js)
+    setConsent(consent)
+
     // Collapse after choice
     setTimeout(() => setIsExpanded(false), 800)
   }
@@ -62,8 +65,9 @@ export default function DataProtection() {
       {isExpanded && (
         <div className="data-protection-content">
           <div className="data-protection-text">
-            This website uses analytics to improve user experience. 
-            Your data is processed according to GDPR compliance.
+            Anonymous statistics without cookies: pages, clicks, country (PostHog, EU).
+            Accept also allows heatmaps and session replays of mouse and scroll,
+            and remembers this browser. You can change this here anytime.
           </div>
           <div className="data-protection-actions">
             <button 

@@ -35,7 +35,10 @@ Not tracked: localhost and Vercel previews (add `?track` to test there), visits 
 tracked and why not. Custom events go through `track(name, props)`; the list of events (menu,
 showreel progress via Vimeo's postMessage API, sections, scroll depth, contact clicks, clicks on
 the 3D, the 3D quality level per device, a visit summary on page leave) is at the top of
-`lib/analytics.js`.
+`lib/analytics.js`. "Accept" in the Privacy box (`components/DataProtection.js` -> `setConsent`)
+adds heatmaps, session replays and a remembered browser id (localStorage, no cookies);
+"Decline" switches them off again and deletes PostHog's stored id. Session replays also need
+"Record user sessions" switched on in the PostHog project settings.
 
 ## Scroll echo tuning
 
