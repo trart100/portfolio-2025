@@ -4,14 +4,13 @@ import { gyroClock } from '../lib/gyro/clock'
 import { createSpinClock } from '../lib/gyro/spin'
 import { liteMode, setLiteMode, liteOnComputer } from '../lib/gyro/lite'
 
-// Temporary fix (6.8.14, to be worked out properly later): once the preloader is gone, the 3D's
-// frames are counted for LITE_WINDOW_MS; below LITE_BELOW_FPS drawn frames a second the scene is
-// rebuilt with the phone setup ("lite", lib/gyro/lite.js) for the rest of the visit. A window
-// interrupted by the showreel (3D paused) or a hidden tab is thrown away and measured again.
-// ?litetest switches regardless of the count (to see the switch on a fast computer).
-const LITE_BELOW_FPS = 30
-const LITE_SETTLE_MS = 500 // after the preloader is gone, before counting
-const LITE_WINDOW_MS = 2000
+// Quality is picked once the preloader is completely gone (quality.js, 6.8.16): GyroVisual
+// waits for that, then LITE_SETTLE_MS more, and calls quality.begin(). When even the lowest
+// level draws fewer than 30 frames a second, quality.js calls onLite and the scene is rebuilt
+// with the phone setup ("lite", lib/gyro/lite.js, shown as Q6) for the rest of the visit.
+// ?litetest switches to it anyway, shortly after the measuring starts (to see the switch).
+const LITE_SETTLE_MS = 500 // after the preloader is gone, before measuring
+const LITE_TEST_MS = 1500
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
 
@@ -136,8 +135,9 @@ export default function GyroVisual() {
           observer = new ResizeObserver(resize)
           observer.observe(box)
 
-          // Adaptive quality: picks the level behind the preloader, then only steps down on
-          // sustained slowness. Off for frozen frames / the comparison tool (dev captures).
+          // Adaptive quality (quality.js, 6.8.16): starts at Q5, measures once the preloader is
+          // gone (begin(), below), then only steps down on sustained slowness. Off for frozen
+          // frames / the comparison tool (dev captures) / a forced ?q level / a rebuild.
           const quality = createQualityController({
             gyro,
             setResolution: (value) => {
@@ -146,12 +146,16 @@ export default function GyroVisual() {
             },
             onSettled: () => {
               canvas.dataset.measured = quality.getMeasured().join('/')
-              canvas.classList.add('is-ready')
-              sendReady()
+              const fps = quality.getFps()
+              if (fps.length) {
+                canvas.dataset.fps3d = String(fps[0]) // frames a second at Q5, right after the preloader
+                canvas.dataset.fpsLog = fps.join('/') // per measured level
+              }
               if (params.has('gui')) {
-                console.info(`[GyroVisual] quality level ${quality.getLevel()} (start-up ms per level tried: ${quality.getMeasured().join(', ')})`)
+                console.info(`[GyroVisual] quality level ${quality.getLevel()} (ms per measured level: ${quality.getMeasured().join(', ')}; fps: ${fps.join(', ')})`)
               }
             },
+            onLite: (fps) => switchToLite(fps),
             forcedLevel: keptLevel != null ? keptLevel : Number.isFinite(forcedParam) ? forcedParam : null,
             adapt: keptLevel == null && !Number.isFinite(frozen) && !params.has('ref')
           })
@@ -167,6 +171,12 @@ export default function GyroVisual() {
             const dt = lastRender > 0 ? (now - lastRender) / 1000 : 0
             lastRender = now
             renders += 1
+            // Shown (and the Preloader released) after the first frames at the starting level;
+            // the level is picked later, once the preloader is gone (6.8.16)
+            if (renders === 3) {
+              canvas.classList.add('is-ready')
+              sendReady()
+            }
             let seconds = (now - clockBegin) / 1000
             let spin = null
             if (gyroClock.seconds != null) seconds = gyroClock.seconds
@@ -210,6 +220,7 @@ export default function GyroVisual() {
             covered = root.classList.contains('showreel-open')
             if (covered && pausedAt == null) {
               interruptions += 1
+              quality.interrupt() // a measuring window must not include the pause
               pausedAt = performance.now()
               if (frameId != null) cancelAnimationFrame(frameId)
               frameId = null
@@ -244,39 +255,35 @@ export default function GyroVisual() {
       start()
     }
 
-    // The lite check (temporary fix, see LITE_BELOW_FPS). Only on computers in the normal setup
-    // (not ?lite / touch, not frozen frames, ?ref or a forced ?q level), once per visit, and only
-    // once the preloader is completely gone: <html>.preloader-active is removed when the
-    // Preloader unmounts, 0.9 s after loading ends (its fade-out ends at ~0.4 s), then
-    // LITE_SETTLE_MS more before counting.
-    const canCheckLite = !Number.isFinite(frozen) && !params.has('ref') && !Number.isFinite(forcedParam)
-    const onVisibility = () => { interruptions += 1 }
-    const measureLite = () => {
+    // The phone setup for the rest of the visit (Q6): from quality.js (onLite) or ?litetest.
+    // Rebuilt after the current frame (onLite fires inside the loop).
+    const switchToLite = (fps) => {
+      if (disposed || liteMode()) return
+      canvas.dataset.lite = `auto ${Math.round(fps)} fps @${Math.round(performance.now())}`
+      setLiteMode(true)
+      setTimeout(() => {
+        if (disposed) return
+        stop()
+        start()
+      }, 0)
+    }
+
+    // Quality is picked once the preloader is completely gone: <html>.preloader-active is removed
+    // when the Preloader unmounts, 0.9 s after loading ends (its fade-out ends at ~0.4 s), then
+    // LITE_SETTLE_MS more. A hidden tab or the showreel restarts the measuring window.
+    const onVisibility = () => {
+      interruptions += 1
+      if (gyro && gyro.quality) gyro.quality.interrupt()
+    }
+    const beginQuality = () => {
       liteTimer = null
-      if (disposed || liteMode() || !gyro) return
-      if (covered || document.hidden) {
-        liteTimer = setTimeout(measureLite, LITE_SETTLE_MS)
+      if (disposed) return
+      if (!gyro || !gyro.quality || covered || document.hidden) {
+        liteTimer = setTimeout(beginQuality, LITE_SETTLE_MS)
         return
       }
-      const from = renders
-      const epoch = interruptions
-      const t0 = performance.now()
-      liteTimer = setTimeout(() => {
-        liteTimer = null
-        if (disposed || liteMode()) return
-        if (interruptions !== epoch || covered || document.hidden) {
-          liteTimer = setTimeout(measureLite, LITE_SETTLE_MS) // interrupted: measure again
-          return
-        }
-        const fps = ((renders - from) * 1000) / (performance.now() - t0)
-        canvas.dataset.fps3d = String(Math.round(fps)) // readable in the element inspector
-        if (fps < LITE_BELOW_FPS || params.has('litetest')) {
-          canvas.dataset.lite = `auto ${Math.round(fps)} fps @${Math.round(performance.now())}`
-          setLiteMode(true)
-          stop()
-          start()
-        }
-      }, LITE_WINDOW_MS)
+      gyro.quality.begin()
+      if (params.has('litetest')) liteTimer = setTimeout(() => switchToLite(0), LITE_TEST_MS)
     }
     const waitForPreloader = () => {
       liteTimer = null
@@ -285,12 +292,10 @@ export default function GyroVisual() {
         liteTimer = setTimeout(waitForPreloader, 250)
         return
       }
-      liteTimer = setTimeout(measureLite, LITE_SETTLE_MS)
+      liteTimer = setTimeout(beginQuality, LITE_SETTLE_MS)
     }
-    if (canCheckLite && !liteMode()) {
-      document.addEventListener('visibilitychange', onVisibility)
-      waitForPreloader()
-    }
+    document.addEventListener('visibilitychange', onVisibility)
+    waitForPreloader()
 
     canvas.addEventListener('webglcontextlost', handleContextLost)
     canvas.addEventListener('webglcontextrestored', handleContextRestored)
