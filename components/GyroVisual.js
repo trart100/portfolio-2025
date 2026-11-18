@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { gyroClock } from '../lib/gyro/clock'
 import { createSpinClock } from '../lib/gyro/spin'
-import { liteMode, setLiteMode } from '../lib/gyro/lite'
+import { liteMode, setLiteMode, liteOnComputer } from '../lib/gyro/lite'
 
 // Temporary fix (6.8.14, to be worked out properly later): once the preloader is gone, the 3D's
 // frames are counted for LITE_WINDOW_MS; below LITE_BELOW_FPS drawn frames a second the scene is
@@ -187,8 +187,9 @@ export default function GyroVisual() {
               quality.frame(now)
             }
             // Readable from the element inspector (also on phones): level, start-up timings and
-            // when each level began (ms after page start)
-            const label = `${quality.getLevel()}`
+            // when each level began (ms after page start). 6 = the phone setup on a computer
+            // (lite switch or ?lite, 6.8.15); the FPS readout shows it as Q6.
+            const label = liteOnComputer() ? '6' : `${quality.getLevel()}`
             if (canvas.dataset.quality !== label) {
               canvas.dataset.quality = label
               canvas.dataset.levels = `${canvas.dataset.levels ? `${canvas.dataset.levels} ` : ''}${label}@${Math.round(now)}`
