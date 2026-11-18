@@ -35,7 +35,9 @@ const CLOSE_VIDEO_OUT = 0.18 // s
 const CLOSE_OVERLAY_OUT = 0.25 // s
 
 // On <html>: LOCK stops the page behind from scrolling (wheel/keys inside the
-// cross-origin Vimeo iframe would otherwise chain to it); OPEN hides the page chrome.
+// cross-origin Vimeo iframe would otherwise chain to it); OPEN hides the page chrome and pauses
+// the 3D background (GyroVisual watches it; 6.8.12). Both are set only once the overlay fully
+// covers the page and removed as soon as closing starts.
 const LOCK_CLASS = 'showreel-scroll-lock'
 const OPEN_CLASS = 'showreel-open'
 

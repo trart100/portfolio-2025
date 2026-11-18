@@ -27,6 +27,7 @@ export default function GyroVisual() {
     let gui = null
     let frameId = null
     let observer = null
+    let pauseObserver = null
     // Level kept when the scene is rebuilt after a lost WebGL context (no new start-up check)
     let keptLevel = null
     let readySent = false
@@ -57,6 +58,8 @@ export default function GyroVisual() {
       frameId = null
       if (observer) observer.disconnect()
       observer = null
+      if (pauseObserver) pauseObserver.disconnect()
+      pauseObserver = null
       if (gui) gui.destroy()
       gui = null
       if (!gyro) return
@@ -123,7 +126,7 @@ export default function GyroVisual() {
           })
           gyro.quality = quality
 
-          const begin = performance.now()
+          let begin = performance.now()
           let lastRender = -Infinity
           // Click spin-up: own clocks for the gold and the glass (off for frozen frames / ?ref)
           const spinClock = createSpinClock(gyro.look.spin)
@@ -162,7 +165,34 @@ export default function GyroVisual() {
             const watched = quality.getWatched()
             if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
           }
+
+          // Showreel open (6.8.12): while the black showreel overlay covers the whole page
+          // (<html>.showreel-open, set by ShowreelOverlay once its fade-in is done and removed as
+          // soon as closing starts) the 3D is not rendered at all, so the GPU is free for the video
+          // (suspected cause of the stutter at the reel's start, 2026-11). It resumes where it
+          // stopped: its clock skips the paused time and the first frame after has no time step,
+          // so pose and spin carry on unchanged. The quality check ignores the gap (> GAP_MS).
+          const root = document.documentElement
+          let pausedAt = null
+          const syncPause = () => {
+            const covered = root.classList.contains('showreel-open')
+            if (covered && pausedAt == null) {
+              pausedAt = performance.now()
+              if (frameId != null) cancelAnimationFrame(frameId)
+              frameId = null
+              canvas.dataset.paused = 'showreel' // readable in the element inspector
+            } else if (!covered && pausedAt != null) {
+              begin += performance.now() - pausedAt
+              pausedAt = null
+              lastRender = -Infinity
+              delete canvas.dataset.paused
+              if (frameId == null) frameId = requestAnimationFrame(loop)
+            }
+          }
+          pauseObserver = new MutationObserver(syncPause)
+          pauseObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
           frameId = requestAnimationFrame(loop)
+          syncPause()
         })
         .catch(fail)
 
