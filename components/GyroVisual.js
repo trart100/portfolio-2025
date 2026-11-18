@@ -180,11 +180,15 @@ export default function GyroVisual() {
               pausedAt = performance.now()
               if (frameId != null) cancelAnimationFrame(frameId)
               frameId = null
+              // No spin energy while covered: the speed effects (SpeedEffects, still running)
+              // read it, and a frozen value shook the whole page, video included (6.8.12 bug)
+              spinClock.calm()
               canvas.dataset.paused = 'showreel' // readable in the element inspector
             } else if (!covered && pausedAt != null) {
               begin += performance.now() - pausedAt
               pausedAt = null
               lastRender = -Infinity
+              spinClock.calm() // clicks inside the showreel (zoom, close) add no spin afterwards
               delete canvas.dataset.paused
               if (frameId == null) frameId = requestAnimationFrame(loop)
             }
