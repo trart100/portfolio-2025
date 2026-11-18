@@ -33,6 +33,14 @@ const VIDEO_FADE_IN = 0.3 // s, the black cover fading off the player
 // Close: video to black (cover), frame hidden, then the black overlay fades to the page
 const CLOSE_VIDEO_OUT = 0.18 // s
 const CLOSE_OVERLAY_OUT = 0.25 // s
+// Open (6.8.13, faster; same two steps, still one after the other): the page scrolls home at
+// OPEN_SCROLL_PX_PER_S, between OPEN_SCROLL_MIN and OPEN_SCROLL_MAX seconds (before: 1200 px/s,
+// 0.3-1.5 s), then the overlay fades to black in OPEN_FADE seconds (before: 0.6 s).
+// From the bottom of the page that is 0.9 + 0.25 s instead of 1.5 + 0.6 s.
+const OPEN_SCROLL_PX_PER_S = 2000
+const OPEN_SCROLL_MIN = 0.3 // s
+const OPEN_SCROLL_MAX = 0.9 // s
+const OPEN_FADE = 0.25 // s (user's choice, 2026-11-18)
 
 // On <html>: LOCK stops the page behind from scrolling (wheel/keys inside the
 // cross-origin Vimeo iframe would otherwise chain to it); OPEN hides the page chrome and pauses
@@ -251,7 +259,7 @@ export default function ShowreelOverlay({ onClose }) {
 
     if (needsScroll) {
       // Scroll back to top first; duration scales with distance
-      const dynamicDuration = Math.min(Math.max(currentScrollY / 1200, 0.3), 1.5)
+      const dynamicDuration = Math.min(Math.max(currentScrollY / OPEN_SCROLL_PX_PER_S, OPEN_SCROLL_MIN), OPEN_SCROLL_MAX)
       tl.add(gsap.to(window, {
         duration: dynamicDuration,
         scrollTo: { y: 0, autoKill: false },
@@ -261,7 +269,7 @@ export default function ShowreelOverlay({ onClose }) {
 
     // Then fade in overlay (immediate if no scroll needed)
     tl.add(gsap.to(ref.current, {
-      duration: 0.6,
+      duration: OPEN_FADE,
       opacity: 1,
       ease: 'power2.out'
     }), needsScroll ? undefined : 0)
