@@ -145,14 +145,11 @@ export default function GyroVisual() {
               resize()
             },
             onSettled: () => {
-              canvas.dataset.measured = quality.getMeasured().join('/')
-              const fps = quality.getFps()
-              if (fps.length) {
-                canvas.dataset.fps3d = String(fps[0]) // frames a second at Q5, right after the preloader
-                canvas.dataset.fpsLog = fps.join('/') // per measured level
-              }
+              const base = quality.getBaseFps()
+              if (base != null) canvas.dataset.fps3d = String(base) // frames a second at Q5, after the preloader
+              canvas.dataset.fpsLog = quality.getFps().join(' ') // "level:fps" per counted window
               if (params.has('gui')) {
-                console.info(`[GyroVisual] quality level ${quality.getLevel()} (ms per measured level: ${quality.getMeasured().join(', ')}; fps: ${fps.join(', ')})`)
+                console.info(`[GyroVisual] quality level ${quality.getLevel()} (level:fps tried: ${quality.getFps().join(', ')})`)
               }
             },
             onLite: (fps) => switchToLite(fps),
@@ -204,7 +201,7 @@ export default function GyroVisual() {
               canvas.dataset.quality = label
               canvas.dataset.levels = `${canvas.dataset.levels ? `${canvas.dataset.levels} ` : ''}${label}@${Math.round(now)}`
             }
-            // Watch median of timed frames (ms), > 20 = step down
+            // Frames a second over the last counted second, once settled (6.8.16: fps, not ms)
             const watched = quality.getWatched()
             if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
             // Diagnostics (6.8.16): where the quality picking is (wait / base / verify / settled / fixed)
