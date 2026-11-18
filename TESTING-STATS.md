@@ -108,5 +108,9 @@ Zdarzenia sprzed kliknięcia Accept w Brave przepadają. To jest oczekiwane, bo 
 | Data | ID | Przeglądarka | Wariant | PostHog | Kraj | Nagranie | Vimeo | Uwagi |
 |---|---|---|---|---|---|---|---|---|
 | 18.11, lokalnie | t1118-pane-none | wbudowana (Chromium) | A | ✅ wszystkie zdarzenia, `via = direct` | PL | nie dotyczy | nie powinno liczyć (`dnt=1`) | |
-| 18.11, lokalnie | t1118-pane-accept | wbudowana (Chromium) | B | ✅ wszystkie zdarzenia przez `/akx`, `vimeo_stats = true` | brak (localhost) | ✅ 3,5 min, 14 kliknięć | **do sprawdzenia w Vimeo** | zdarzenia showreela doszły po około 2 min |
+| 18.11, lokalnie | t1118-pane-accept | wbudowana (Chromium) | B | ✅ wszystkie zdarzenia przez `/akx`, `vimeo_stats = true` | brak (localhost) | ✅ 3,5 min, 14 kliknięć | ✅ Vimeo: 2 wyświetlenia 18.11 przed testami w Brave (R2 i przebieg kontrolny, oba po Accept) | zdarzenia showreela doszły po około 2 min |
+| 18.11, lokalnie | t1118-brave-none (bez znacznika*) | Brave, okno prywatne | A | ✅ tylko `$pageview`, czyli tak jak powinno | PL | nie dotyczy | nie powinno liczyć | inna kolejność kroków, bez 5 kliknięć |
+| 18.11, lokalnie | t1118-brave-acc (bez znacznika*) | Brave, okno prywatne | B | ✅ **wszystkie** zdarzenia przez `/akx` (wcześniej Brave wysyłał tylko `$pageview`), `vimeo_stats = true` | brak (localhost) | ✅ 2 min, 16 kliknięć | **do sprawdzenia**: czy Vimeo pokazuje 3. wyświetlenie z 18.11 | |
 | | | | | | | | | |
+
+\* Adres skopiowany razem z kropką kończącą zdanie (`...brave-acc.`), więc znacznik się nie zapisał. Przebiegi znalezione po przeglądarce i sesji. Od tej poprawki kropka i inne znaki po ID są ignorowane.
