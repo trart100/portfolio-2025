@@ -96,7 +96,8 @@ Zdarzenia sprzed kliknięcia Accept w Brave przepadają. To jest oczekiwane, bo 
 1. Vimeo → film → Analytics: liczba *Views* z dzisiaj.
 2. Oczekiwany wynik: wzrost **o co najmniej liczbę przebiegów B z Chromium** (R2). Przebiegi A i C nie mogą niczego dodać.
 3. R4 (Brave, Accept) zapisz osobno: dodało albo nie dodało. To jest właśnie niewiadoma z tabeli 1.
-4. Opóźnienie statystyk Vimeo nie jest znane. Sprawdź po około 1 godzinie i jeszcze raz następnego dnia, a faktyczne opóźnienie dopisz do wyników poniżej.
+4. Statystyki Vimeo się spóźniają: 18.11 o około 10–20 minut. Sprawdzaj najwcześniej po 30 minutach.
+5. **Odtworzenia z przeglądarki zalogowanej do Vimeo nigdy się nie liczą** (zasada Vimeo dotycząca właściciela). Testuj w oknie prywatnym albo w przeglądarce bez logowania do Vimeo.
 
 ## 6. Po publikacji
 
@@ -115,5 +116,9 @@ Zdarzenia sprzed kliknięcia Accept w Brave przepadają. To jest oczekiwane, bo 
 
 | 18.11, **na żywo** (6.8.11) | t1118-live-pane-none | wbudowana (Chromium) | A (krótko) | ✅ wszystkie zdarzenia, `via = direct` | PL, Gdańsk | nie dotyczy | nie powinno liczyć | |
 | 18.11, **na żywo** (6.8.11) | t1118-live-pane-acc | wbudowana (Chromium) | B (krótko) | ✅ zdarzenia przez `/akx`, `vimeo_stats = true` | ✅ **PL, Gdańsk także przez `/akx`**, czyli adres IP przechodzi poprawnie | nagrywanie włączone | do sprawdzenia w Vimeo | |
+
+| 18.11, **na żywo** (6.8.11) | (bez znacznika) | Chrome Twój, zgoda zapisana wcześniej | B | ✅ 11 zdarzeń przez `/akx`, `vimeo_stats = true` | PL | | wchodzi w bilans Vimeo poniżej | 11:05 |
+
+**Vimeo, bilans z 18.11:** odtworzeń bez `dnt` było 6 (ok. 10:35 sam odtwarzacz, 10:44 i 10:46 localhost, 10:54 Brave localhost, 11:00 i 11:05 arturkalinowski.com). Odtworzeń z `dnt=1` było 3. Vimeo pokazało około 10:52 2 wyświetlenia, a około 11:10 **6**. Liczby się zgadzają: każde odtworzenie bez `dnt` policzone (także Brave w oknie prywatnym), żadne z `dnt` nie. Statystyki Vimeo spóźniały się o około 10–20 minut. To wniosek z liczb, a nie potwierdzenie każdego odtworzenia osobno. Dokładnie potwierdzi to podział według źródła w Vimeo: oczekiwane `localhost:3123` 4, `arturkalinowski.com` 2, sam odtwarzacz 1.
 
 \* Adres skopiowany razem z kropką kończącą zdanie (`...brave-acc.`), więc znacznik się nie zapisał. Przebiegi znalezione po przeglądarce i sesji. Od tej poprawki kropka i inne znaki po ID są ignorowane.
