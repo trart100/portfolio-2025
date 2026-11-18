@@ -26,8 +26,14 @@ export default function FpsMeter({ visible = process.env.NODE_ENV === 'developme
       return level ? ` / Q${level}` : ''
     }
 
+    // GPU time of one 3D frame (ms), where the browser can measure it (GyroVisual, gpuTimer.js)
+    const gpu = () => {
+      const ms = canvas && canvas.dataset.gpu
+      return ms ? ` / GPU ${ms} ms` : ''
+    }
+
     const render = () => {
-      const next = `${size.w} × ${size.h} / ${fps} FPS${quality()}`
+      const next = `${size.w} × ${size.h} / ${fps} FPS${quality()}${gpu()}`
       if (next !== label && textRef.current) {
         label = next
         textRef.current.textContent = next
