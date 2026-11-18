@@ -37,9 +37,12 @@ export default function GyroVisual() {
     const frozen = frozenParam != null && frozenParam !== '' ? parseFloat(frozenParam) : null
     const forcedParam = parseInt(params.get('q'), 10)
     // Touch devices (phones, often 90-120 Hz screens): the 3D renders at most 30 times a second
-    // (the page itself keeps the screen's rate) and at a pixel density of at most 1.5
+    // (the page itself keeps the screen's rate) and at a pixel density of at most 1.5.
+    // Computers (6.8.14): at most ~60 times a second; before, every screen refresh, so 120 Hz
+    // screens (MacBook Pro) rendered it twice as often. 60/75/90 Hz screens render every frame,
+    // 120 Hz every 2nd (60), 144 Hz every 2nd (72). - 4 / - 6: rAF timing jitter.
     const touch = window.matchMedia('(pointer: coarse)').matches
-    const MIN_FRAME_MS = touch ? 1000 / 30 - 4 : 0 // - 4: rAF timing jitter
+    const MIN_FRAME_MS = touch ? 1000 / 30 - 4 : 1000 / 60 - 6
     const MAX_PIXEL_RATIO = touch ? 1.5 : 2
 
     // Same signal the video used to send, so the Preloader can finish
