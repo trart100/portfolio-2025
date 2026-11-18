@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 // Site version shown next to the FPS readout; bump "version" in package.json on every change
 import pkg from '../package.json'
+import { isOwnBrowser } from '../lib/analytics'
 
 const SAMPLE_COUNT = 30
 
@@ -26,9 +27,11 @@ export default function FpsMeter({ visible = process.env.NODE_ENV === 'developme
       return level ? ` / Q${level}` : ''
     }
 
-    // GPU time of one 3D frame (ms), where the browser can measure it (GyroVisual, gpuTimer.js)
+    // GPU time of one 3D frame (ms), where the browser can measure it (GyroVisual, gpuTimer.js).
+    // Only in the owner's own browser (marked with ?notrack, 6.8.20); visitors do not see it.
+    const own = isOwnBrowser()
     const gpu = () => {
-      const ms = canvas && canvas.dataset.gpu
+      const ms = own && canvas && canvas.dataset.gpu
       return ms ? ` / GPU ${ms} ms` : ''
     }
 
