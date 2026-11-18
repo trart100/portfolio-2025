@@ -9,7 +9,8 @@ import { liteMode, setLiteMode, liteOnComputer } from '../lib/gyro/lite'
 // level draws fewer than 30 frames a second, quality.js calls onLite and the scene is rebuilt
 // with the phone setup ("lite", lib/gyro/lite.js, shown as Q6) for the rest of the visit.
 // ?litetest switches to it anyway, shortly after the measuring starts (to see the switch).
-const LITE_SETTLE_MS = 1000 // after the preloader is gone, before measuring (0.5 s was still busy)
+const LITE_SETTLE_MS = 0 // after the preloader is gone, before measuring (owner, 2026-11-18: right away)
+const BEGIN_RETRY_MS = 500 // page hidden / showreel open when measuring should start: try again
 const LITE_TEST_MS = 1500
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
@@ -279,7 +280,7 @@ export default function GyroVisual() {
       liteTimer = null
       if (disposed) return
       if (!gyro || !gyro.quality || covered || document.hidden) {
-        liteTimer = setTimeout(beginQuality, LITE_SETTLE_MS)
+        liteTimer = setTimeout(beginQuality, BEGIN_RETRY_MS)
         return
       }
       gyro.quality.begin()
