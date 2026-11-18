@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { gyroClock } from '../lib/gyro/clock'
 import { createSpinClock } from '../lib/gyro/spin'
-import { liteMode } from '../lib/gyro/lite'
+import { liteMode, setLiteMode } from '../lib/gyro/lite'
+
+// Temporary fix (6.8.14, to be worked out properly later): once the preloader is gone, the 3D's
+// frames are counted for LITE_WINDOW_MS; below LITE_BELOW_FPS drawn frames a second the scene is
+// rebuilt with the phone setup ("lite", lib/gyro/lite.js) for the rest of the visit. A window
+// interrupted by the showreel (3D paused) or a hidden tab is thrown away and measured again.
+// ?litetest switches regardless of the count (to see the switch on a fast computer).
+const LITE_BELOW_FPS = 30
+const LITE_SETTLE_MS = 500 // after the preloader is gone, before counting
+const LITE_WINDOW_MS = 2000
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
 
@@ -29,9 +38,21 @@ export default function GyroVisual() {
     let frameId = null
     let observer = null
     let pauseObserver = null
-    // Level kept when the scene is rebuilt after a lost WebGL context (no new start-up check)
+    // Level kept when the scene is rebuilt after a lost WebGL context or the lite switch (no
+    // new start-up check)
     let keptLevel = null
     let readySent = false
+    // Kept across rebuilds, so the animation carries on from the same pose: the animation
+    // clock (shifted by showreel pauses) and the click / scroll spin
+    let clockBegin = null
+    let spinClock = null
+    // For the lite check: 3D frames drawn so far; showreel covering the page; pauses / hidden
+    // tab so far (a measuring window compares them)
+    let renders = 0
+    let covered = false
+    let interruptions = 0
+    let liteTimer = null
+    const root = document.documentElement
 
     const params = new URLSearchParams(window.location.search)
     const frozenParam = params.get('t')
@@ -136,16 +157,17 @@ export default function GyroVisual() {
           })
           gyro.quality = quality
 
-          let begin = performance.now()
+          if (clockBegin == null) clockBegin = performance.now()
           let lastRender = -Infinity
           // Click spin-up: own clocks for the gold and the glass (off for frozen frames / ?ref)
-          const spinClock = createSpinClock(gyro.look.spin)
+          if (!spinClock) spinClock = createSpinClock(gyro.look.spin)
           const loop = (now) => {
             frameId = requestAnimationFrame(loop)
             if (now - lastRender < MIN_FRAME_MS) return
             const dt = lastRender > 0 ? (now - lastRender) / 1000 : 0
             lastRender = now
-            let seconds = (now - begin) / 1000
+            renders += 1
+            let seconds = (now - clockBegin) / 1000
             let spin = null
             if (gyroClock.seconds != null) seconds = gyroClock.seconds
             else if (Number.isFinite(frozen)) seconds = frozen
@@ -182,11 +204,11 @@ export default function GyroVisual() {
           // (suspected cause of the stutter at the reel's start, 2026-11). It resumes where it
           // stopped: its clock skips the paused time and the first frame after has no time step,
           // so pose and spin carry on unchanged. The quality check ignores the gap (> GAP_MS).
-          const root = document.documentElement
           let pausedAt = null
           const syncPause = () => {
-            const covered = root.classList.contains('showreel-open')
+            covered = root.classList.contains('showreel-open')
             if (covered && pausedAt == null) {
+              interruptions += 1
               pausedAt = performance.now()
               if (frameId != null) cancelAnimationFrame(frameId)
               frameId = null
@@ -195,7 +217,7 @@ export default function GyroVisual() {
               spinClock.calm()
               canvas.dataset.paused = 'showreel' // readable in the element inspector
             } else if (!covered && pausedAt != null) {
-              begin += performance.now() - pausedAt
+              clockBegin += performance.now() - pausedAt
               pausedAt = null
               lastRender = -Infinity
               spinClock.calm() // clicks inside the showreel (zoom, close) add no spin afterwards
@@ -220,12 +242,63 @@ export default function GyroVisual() {
       stop()
       start()
     }
+
+    // The lite check (temporary fix, see LITE_BELOW_FPS). Only on computers in the normal setup
+    // (not ?lite / touch, not frozen frames, ?ref or a forced ?q level), once per visit, and only
+    // once the preloader is completely gone: <html>.preloader-active is removed when the
+    // Preloader unmounts, 0.9 s after loading ends (its fade-out ends at ~0.4 s), then
+    // LITE_SETTLE_MS more before counting.
+    const canCheckLite = !Number.isFinite(frozen) && !params.has('ref') && !Number.isFinite(forcedParam)
+    const onVisibility = () => { interruptions += 1 }
+    const measureLite = () => {
+      liteTimer = null
+      if (disposed || liteMode() || !gyro) return
+      if (covered || document.hidden) {
+        liteTimer = setTimeout(measureLite, LITE_SETTLE_MS)
+        return
+      }
+      const from = renders
+      const epoch = interruptions
+      const t0 = performance.now()
+      liteTimer = setTimeout(() => {
+        liteTimer = null
+        if (disposed || liteMode()) return
+        if (interruptions !== epoch || covered || document.hidden) {
+          liteTimer = setTimeout(measureLite, LITE_SETTLE_MS) // interrupted: measure again
+          return
+        }
+        const fps = ((renders - from) * 1000) / (performance.now() - t0)
+        canvas.dataset.fps3d = String(Math.round(fps)) // readable in the element inspector
+        if (fps < LITE_BELOW_FPS || params.has('litetest')) {
+          canvas.dataset.lite = `auto ${Math.round(fps)} fps @${Math.round(performance.now())}`
+          setLiteMode(true)
+          stop()
+          start()
+        }
+      }, LITE_WINDOW_MS)
+    }
+    const waitForPreloader = () => {
+      liteTimer = null
+      if (disposed) return
+      if (root.classList.contains('preloader-active')) {
+        liteTimer = setTimeout(waitForPreloader, 250)
+        return
+      }
+      liteTimer = setTimeout(measureLite, LITE_SETTLE_MS)
+    }
+    if (canCheckLite && !liteMode()) {
+      document.addEventListener('visibilitychange', onVisibility)
+      waitForPreloader()
+    }
+
     canvas.addEventListener('webglcontextlost', handleContextLost)
     canvas.addEventListener('webglcontextrestored', handleContextRestored)
     start()
 
     return () => {
       disposed = true
+      if (liteTimer != null) clearTimeout(liteTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
       canvas.removeEventListener('webglcontextlost', handleContextLost)
       canvas.removeEventListener('webglcontextrestored', handleContextRestored)
       stop()
