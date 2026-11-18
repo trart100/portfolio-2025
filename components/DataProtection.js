@@ -26,7 +26,8 @@ export default function DataProtection() {
     // Store in localStorage
     localStorage.setItem('datenschutz-consent', consent.toString())
     localStorage.setItem('datenschutz-timestamp', new Date().toISOString())
-    // Statistics: Accept adds heatmaps / session replays (lib/analytics.js)
+    // Statistics: Accept adds heatmaps / session replays, sends them via this site's address
+    // (lib/analytics.js), and lets Vimeo count showreel plays (ShowreelOverlay)
     setConsent(consent)
 
     // Collapse after choice
@@ -65,7 +66,7 @@ export default function DataProtection() {
       {isExpanded && (
         <div className="data-protection-content">
           <div className="data-protection-text">
-            Anonymous stats, no cookies. Accept adds heatmaps and session replays.
+            Anonymous stats, no cookies. Accept adds heatmaps, session replays and Vimeo view stats (Vimeo cookies).
             <br />
             <a href="/privacy" className="data-protection-link">Privacy policy</a>
           </div>

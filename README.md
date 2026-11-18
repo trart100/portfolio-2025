@@ -39,13 +39,20 @@ the 3D, the 3D quality level per device, a visit summary on page leave) is at th
 adds heatmaps, session replays and a remembered browser id (localStorage, no cookies);
 "Decline" switches them off again and deletes PostHog's stored id. Session replays also need
 "Record user sessions" switched on in the PostHog project settings.
+After "Accept" (6.8.11) events go through this site's own address `/akx` (rewrites in
+`next.config.js`) and PostHog's add-on scripts are bundled, so tracker blockers such as Brave do
+not drop them; without consent they go straight to PostHog and Brave keeps only the first page view.
+How to check that stats really arrive, in PostHog and in Vimeo: `TESTING-STATS.md`
+(`?testrun=<id>` tags a test).
 
 ## Privacy
 
 - `/privacy` (`pages/privacy.js`) describes everything below; keep it in sync when adding a service.
 - Fonts (Manrope, Space Grotesk) are served from `public/fonts` (`@font-face` at the top of
   `styles/globals.css`, Latin + Latin Extended, SIL Open Font License); the page contacts no font service.
-- The Vimeo player URL carries `dnt=1` (no Vimeo tracking cookies) and loads only when the showreel opens.
+- The Vimeo player loads only when the showreel opens. Without "Accept" its URL carries `dnt=1`:
+  no Vimeo cookies, and Vimeo also counts no play in its statistics. After "Accept" `dnt` is left
+  out, so Vimeo counts the play and sets its cookies.
 - On a first visit the page contacts only this site and PostHog's EU servers.
 
 ## Scroll echo tuning

@@ -1,8 +1,10 @@
 import Head from 'next/head'
 
-// Privacy policy (6.8.3). Linked from the Privacy box. Describes the state from 6.8.4 on:
-// fonts served from this site, Vimeo player with "do not track". Keep it in sync with
-// lib/analytics.js (what is collected) and components/DataProtection.js (the choice).
+// Privacy policy (6.8.3). Linked from the Privacy box. Describes the state from 6.8.11 on:
+// fonts served from this site; Vimeo player with "do not track" unless "Accept"; after
+// "Accept" statistics go through this site's own address. Keep it in sync with
+// lib/analytics.js (what is collected), components/ShowreelOverlay.js (Vimeo) and
+// components/DataProtection.js (the choice).
 const UPDATED = 'November 2026'
 
 export default function Privacy() {
@@ -54,10 +56,13 @@ export default function Privacy() {
             <strong>If you click &quot;Accept&quot;</strong> in the Privacy box, PostHog additionally
             records heatmaps and session replays (mouse movement, clicks and scrolling on this page;
             the 3D animation and any typed text are not recorded) and stores an identifier in your
-            browser&apos;s local storage, so a return visit is recognised. No cookies are used. Legal
-            basis: your consent (Art. 6(1)(a) GDPR, § 25(1) TDDDG). You can withdraw it at any time in
-            the Privacy box (top right): &quot;Decline&quot; stops the recording at once and deletes
-            the stored identifier.
+            browser&apos;s local storage, so a return visit is recognised. No cookies are used. From
+            then on the statistics are sent through this website&apos;s own address
+            (arturkalinowski.com), which passes them on to PostHog EU unchanged, so they also arrive
+            if your browser blocks trackers. Legal basis: your consent (Art. 6(1)(a) GDPR, § 25(1)
+            TDDDG). You can withdraw it at any time in the Privacy box (top right): &quot;Decline&quot;
+            stops the recording at once, deletes the stored identifier and returns to the anonymous
+            statistics above.
           </p>
           <p>
             The data is used only for these statistics, is not sold or used for advertising, and is
@@ -70,9 +75,19 @@ export default function Privacy() {
           <p>
             The showreel is played by Vimeo (Vimeo.com, Inc., USA). Vimeo is contacted only when you
             open the showreel; Vimeo then receives your IP address and technical data about your
-            device. The player is set to &quot;do not track&quot;, so Vimeo does not use cookies to
-            follow your activity. Legal basis: you asked to watch the video (Art. 6(1)(b) and (f)
-            GDPR). More in Vimeo&apos;s privacy policy.
+            device. Legal basis: you asked to watch the video (Art. 6(1)(b) and (f) GDPR).
+          </p>
+          <p>
+            <strong>Without your consent</strong> the player is set to &quot;do not track&quot;:
+            Vimeo sets no cookies and does not count your viewing in its statistics.
+          </p>
+          <p>
+            <strong>If you click &quot;Accept&quot;</strong>, the player runs without &quot;do not
+            track&quot;: Vimeo counts the viewing in the video&apos;s statistics and sets its own
+            cookies (for example <code>vuid</code> and <code>player</code>) on vimeo.com. Legal
+            basis: your consent (Art. 6(1)(a) GDPR, § 25(1) TDDDG), which you can withdraw in the
+            Privacy box at any time. Cookies Vimeo has already set can be deleted in your browser
+            settings. More in Vimeo&apos;s privacy policy.
           </p>
         </section>
 
@@ -93,8 +108,9 @@ export default function Privacy() {
           <h2>Stored on your device</h2>
           <p>
             Your choice in the Privacy box and when you made it (local storage, so you are not asked
-            again), and, only after &quot;Accept&quot;, PostHog&apos;s identifier. You can delete
-            them at any time in your browser settings.
+            again), and, only after &quot;Accept&quot;, PostHog&apos;s identifier and, once you open
+            the showreel, Vimeo&apos;s cookies. You can delete them at any time in your browser
+            settings.
           </p>
         </section>
 

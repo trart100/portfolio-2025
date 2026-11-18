@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
-import { track, addShowreelWatched } from '../lib/analytics'
+import { track, addShowreelWatched, hasConsent } from '../lib/analytics'
 
-// The player URL has dnt=1 ("do not track": Vimeo sets no tracking cookies and keeps no
-// viewing session data); Vimeo is contacted only once the showreel is opened. See pages/privacy.js.
+// Vimeo is contacted only once the showreel is opened. Without "Accept" the player URL has
+// dnt=1 ("do not track"): Vimeo sets no cookies AND counts no play in its statistics (measured
+// 2026-11: with dnt=1 the player sends none of its stats requests). After "Accept" dnt is left
+// out, so Vimeo counts the play (and sets its cookies vuid / player). See pages/privacy.js.
+// Note: tracker blockers (Brave) block some of Vimeo's own stats requests inside its player;
+// that cannot be routed around from this site (TESTING-STATS.md).
 const VIMEO_ORIGIN = 'https://player.vimeo.com'
+const VIMEO_SRC = 'https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=0&loop=1&controls=1'
 const PROGRESS_STEPS = [25, 50, 75, 95]
 
 // Opening: page scrolls home, the overlay fades to black, THEN the video. The player loads at
@@ -40,6 +45,8 @@ export default function ShowreelOverlay({ onClose }) {
   const closingRef = useRef(false)
   const iframeRef = useRef(null)
   const coverRef = useRef(null)
+  // Decided once per opening (the overlay only exists in the browser, after a click)
+  const [vimeoStats] = useState(() => hasConsent())
   const [videoScale, setVideoScale] = useState(100)
   const videoScaleRef = useRef(100)
   videoScaleRef.current = videoScale
@@ -55,7 +62,7 @@ export default function ShowreelOverlay({ onClose }) {
     let watched = 0
     let maxPercent = 0
     let lastSeconds = null
-    track('showreel_open')
+    track('showreel_open', { vimeo_stats: vimeoStats }) // true = player without dnt, Vimeo counts it
 
     const post = (msg) => {
       const win = iframeRef.current && iframeRef.current.contentWindow
@@ -330,7 +337,8 @@ export default function ShowreelOverlay({ onClose }) {
         <div className="overlay-video-wrap">
           <iframe
             ref={iframeRef}
-            src="https://player.vimeo.com/video/1217380292?h=0f4dff3f1b&badge=0&autopause=0&player_id=0&app_id=58479&autoplay=0&loop=1&controls=1&dnt=1"
+            src={vimeoStats ? VIMEO_SRC : `${VIMEO_SRC}&dnt=1`}
+            data-vimeo-stats={vimeoStats ? 'on' : 'off'}
             className="overlay-video"
             frameBorder="0"
             allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
