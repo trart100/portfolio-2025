@@ -1,42 +1,81 @@
-// Quality-picking simulation (6.8.16): runs lib/gyro/quality.js against model computers.
-// Frames are GPU-bound: a frame takes its cost rounded up to the screen refresh. Run: node dev/quality-sim.mjs
-// (Node warns that the module type is not set; harmless.)
+// Simulation of the quality picking (lib/gyro/quality.js, 6.8.18) on model computers whose
+// graphics card changes its clock with the load, as measured on the owner's RTX 3060.
+// Run: node dev/quality-sim.mjs   (Node warns that the module type is not set; harmless.)
+//
+// Model: `max` = GPU ms per level with the card at full clock. The card's clock f (fMin..1) drifts
+// to where a frame takes ~63 % of the frame interval (up in ~0.8 s, down in ~1.5 s); a frame reads
+// max / f. Frames take whole screen refreshes. GPU times arrive 2 frames late. The preloader is up
+// for 2.5 s. `revealed` = when the quality let the preloader go; `seen` = level changes after that.
 globalThis.document = { hidden: false }
-const Q = await import('../lib/gyro/quality.js')
-let seed = 5
+const { createQualityController } = await import('../lib/gyro/quality.js')
+
+let seed = 9
 const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
-function run(name, costs, { hz = 60, cap = 60, touch = false, dense = false, noise = 0.15, beginAt = 3000, busyMs = 0, busyAdd = 0, laterSlow = null } = {}) {
-  seed = 5
-  const gyro = { defaultPeelLayers: touch ? 1 : 4, scaleFor: (m) => (touch || dense ? 1 : m), setPeelLayers: () => {}, setMaxScale: () => {} }
-  let settledAt = null, lite = null, now = 0, last = -1e9, begun = false
-  const q = Q.createQualityController({ gyro, setResolution: () => {}, onSettled: () => { settledAt = now }, onLite: (f) => { lite = f } })
-  const steps = []
-  const vsync = 1000 / hz, minFrame = 1000 / cap - 2
-  while (now < 25000) {
+
+function run(name, { max, fMin = 0.15, hz = 60, timer = true, touch = false, dense = false, lite = false, busy = null, seconds = 30 }) {
+  seed = 9
+  const cap = lite ? 1000 / 30 : 1000 / 60
+  const vsync = 1000 / hz
+  // the 3D draws every k-th screen refresh (its own cap), as GyroVisual works it out
+  const frameMs = Math.max(1, Math.ceil((cap - 6) / vsync - 0.05)) * vsync
+  let layers = 4, asked = 2, res = 1
+  const levelNow = () => (res < 1 ? 4 : layers === 4 ? 0 : layers === 2 ? 1 : asked === 2 && !dense && !touch ? 2 : 3)
+  const gyro = { defaultPeelLayers: touch ? 1 : 4, scaleFor: (m) => (touch || dense ? 1 : m), setPeelLayers: (n) => { layers = n }, setMaxScale: (s) => { asked = s } }
+  let liteAt = null, now = 0, f = fMin * 2, hitch = 0
+  const q = createQualityController({ gyro, setResolution: (r) => { res = r }, timerSupported: timer, frameMs, onLite: () => { liteAt = now } })
+  const preloaderEnd = 2500
+  let revealed = null, begun = false, seen = 0, lastLevel = q.getLevel()
+  const queue = []
+  let lastRender = -1e9
+  while (now < seconds * 1000 && liteAt == null) {
     now += vsync
-    if (!begun && now >= beginAt) { q.begin(); begun = true }
-    if (now - last < minFrame) continue
-    const lvl = q.getLevel() - 1
-    let cost = costs[lvl] * (1 + noise * (rnd() * 2 - 1))
-    if (begun && now - beginAt < busyMs) cost += busyAdd
-    if (laterSlow && now > laterSlow.at) cost += laterSlow.add
-    now += Math.max(0, Math.ceil(cost / vsync) * vsync - vsync)
-    last = now
-    const before = q.getLevel()
+    if (now - lastRender < cap - 6) continue // the 3D own frame cap
+    let lvl = touch ? (res < 1 ? 4 : 3) : levelNow()
+    let ms = (max[lvl] / f) * (1 + 0.06 * (rnd() * 2 - 1))
+    if (busy && now >= busy.from && now < busy.to) ms += busy.add // other GPU work slipping in
+    if (hitch > 0) { ms += 30; hitch -= 1 }
+    const took = Math.max(vsync, Math.ceil(ms / vsync) * vsync)
+    // the card's clock follows the load
+    const want = Math.min(1, Math.max(fMin, (max[lvl] + (busy && now >= busy.from && now < busy.to ? busy.add * f : 0)) / (0.63 * frameMs)))
+    const tau = want > f ? 800 : 1500
+    f += (want - f) * Math.min(1, took / tau)
+    now += took - vsync
+    lastRender = now
+    const tag = q.tag()
+    if (timer) queue.push({ ms, tag })
+    while (queue.length > 2) q.gpu(queue.shift())
+    if (!begun && now >= Math.max(preloaderEnd, revealed ?? 0)) { q.begin(); begun = true }
     q.frame(now)
-    if (q.getLevel() !== before) steps.push(`Q${q.getLevel()}@+${((now - beginAt) / 1000).toFixed(1)}s`)
-    if (settledAt != null && !laterSlow && now > settledAt + 500) break
+    if (revealed == null && (q.isReadyToShow() || now > 2550)) revealed = now
+    if (q.getLevel() !== lastLevel) {
+      lastLevel = q.getLevel()
+      hitch = 2
+      if (revealed != null && now > Math.max(revealed, preloaderEnd)) seen += 1
+    }
   }
-  const out = lite != null ? `Q6 (${Math.round(lite)} fps at Q5)` : `Q${q.getLevel()}`
-  console.log(name.padEnd(40), out.padEnd(18), `settled +${((settledAt - beginAt) / 1000).toFixed(1)} s`.padEnd(16), 'steps:', steps.join(' ') || '-', ' tried:', q.getFps().join(' '))
+  const shown = Math.max(revealed ?? 0, preloaderEnd)
+  console.log(`${name.padEnd(46)} ${(liteAt != null ? 'Q6' : `Q${q.getLevel()}`).padEnd(3)} revealed ${(shown / 1000).toFixed(1)} s  seen ${seen}  ${q.getMode()}  [${q.getLog().join('  ')}]`)
 }
-run('your PC (6 ms at Q1)', [6, 4.5, 3.5, 3.2, 2.5])
-run('your PC, busy 1.5 s (+10 ms)', [6, 4.5, 3.5, 3.2, 2.5], { busyMs: 1500, busyAdd: 10 })
-run('Mac Retina (25 ms at Q1)', [25, 15, 9.8, 9.8, 5.5], { dense: true })
-run('mid PC (22 ms at Q1)', [22, 13, 8.6, 7.7, 4.8])
-run('weak Mac (60 ms at Q1)', [60, 36, 23, 21, 13])
-run('Amsterdam-like (146 ms at Q1)', [146, 90, 60, 56, 40])
-run('laptop power saving (30 Hz)', [6, 4.5, 3.5, 3.2, 2.5], { hz: 30, cap: 30 })
-run('120 Hz MacBook Pro (12 ms at Q1)', [12, 7, 4.7, 4.2, 2.6], { hz: 120, dense: true })
-run('phone (lite, 30 fps cap)', [7, 7, 7, 7, 4], { touch: true, cap: 30 })
-run('your PC, gets slow after 10 s (+20 ms)', [6, 4.5, 3.5, 3.2, 2.5], { laterSlow: { at: 13000, add: 20 } })
+
+const pc = [4.0, 2.9, 2.1, 1.7, 0.6] // owner's PC, big window: Q1 4 ms at full clock
+console.log('--- with the GPU timer')
+run('owner PC (Q1 4 ms at full clock)', { max: pc })
+run('owner PC, deep idle start (clock floor 10 %)', { max: pc, fMin: 0.1 })
+run('owner PC, other GPU work for 4 s at t=10 s', { max: pc, busy: { from: 10000, to: 14000, add: 14 }, seconds: 60 })
+run('good laptop (Q1 9 ms)', { max: [9, 6.3, 4.5, 3.8, 2.2] })
+run('edge laptop (Q1 14 ms)', { max: [14, 9.8, 7, 5.9, 3.5] })
+run('mid laptop (Q1 22 ms)', { max: [22, 15.4, 11, 9.2, 5.5] })
+run('Mac Retina (Q1 30 ms, Q3 = Q4)', { max: [30, 21, 15, 15, 7.5], dense: true })
+run('weak (Q1 60 ms)', { max: [60, 42, 30, 25, 15] })
+run('Amsterdam-like (Q1 146 ms)', { max: [146, 100, 73, 61, 40] })
+run('owner PC on a 30 Hz screen', { max: pc, hz: 30 })
+run('owner PC on a 144 Hz screen', { max: pc, hz: 144 })
+run('phone setup (30 fps), fine', { max: [7, 7, 7, 7, 4], touch: true, lite: true })
+run('phone setup, weak (Q1 45 ms)', { max: [45, 45, 45, 45, 26], touch: true, lite: true })
+console.log('--- without the timer (frame rate only)')
+run('owner PC', { max: pc, timer: false })
+run('mid laptop (Q1 22 ms)', { max: [22, 15.4, 11, 9.2, 5.5], timer: false })
+run('weak (Q1 60 ms)', { max: [60, 42, 30, 25, 15], timer: false })
+run('Amsterdam-like (Q1 146 ms)', { max: [146, 100, 73, 61, 40], timer: false })
+run('owner PC on a 30 Hz screen', { max: pc, hz: 30, timer: false })
+run('Safari Mac Retina (Q1 30 ms)', { max: [30, 21, 15, 15, 7.5], dense: true, timer: false })

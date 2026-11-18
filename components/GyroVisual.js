@@ -9,15 +9,18 @@ import { track } from '../lib/analytics'
 // GPU time readout (6.8.17, lib/gyro/gpuTimer.js): every frame's own GPU time is measured where
 // the browser can (no waiting, no blocking); the median of the last GPU_WINDOW frames is shown
 // next to the FPS (canvas data-gpu, updated twice a second) and sent with visual_quality.
-// It does not pick the quality yet: first it has to prove itself on real devices (?gputest).
+// Since 6.8.18 the quality picking reads the same times (quality.gpu()).
 const GPU_WINDOW = 30
 const GPU_READOUT_MS = 500
 
-// Quality is picked once the preloader is completely gone (quality.js, 6.8.16): GyroVisual
-// waits for that, then LITE_SETTLE_MS more, and calls quality.begin(). When even the lowest
-// level draws fewer than 30 frames a second, quality.js calls onLite and the scene is rebuilt
-// with the phone setup ("lite", lib/gyro/lite.js, shown as Q6) for the rest of the visit.
-// ?litetest switches to it anyway, shortly after the measuring starts (to see the switch).
+// Quality (quality.js, 6.8.18): starts at the best level and drops one only on sustained
+// overload, judged from the GPU's own frame times where the browser has the timer (already
+// behind the preloader, which is kept up until the first verdict, at most REVEAL_MAX_MS), else
+// from the frame rate once the preloader is gone (quality.begin()). When even the lowest level is
+// overloaded, quality.js calls onLite and the scene is rebuilt with the phone setup ("lite",
+// lib/gyro/lite.js, shown as Q6) for the rest of the visit.
+// ?litetest switches to it anyway, shortly after the preloader is gone (to see the switch).
+const REVEAL_MAX_MS = 2500
 const LITE_SETTLE_MS = 0 // after the preloader is gone, before measuring (owner, 2026-11-18: right away)
 const BEGIN_RETRY_MS = 500 // page hidden / showreel open when measuring should start: try again
 const PRELOADER_FADE_MS = 240 // the preloader fade-out (220 ms in globals.css) + a frame
@@ -63,6 +66,7 @@ export default function GyroVisual() {
     let interruptions = 0
     let liteTimer = null
     let gpuTestRan = false
+    let logBefore = ''
     const root = document.documentElement
 
     const params = new URLSearchParams(window.location.search)
@@ -72,7 +76,10 @@ export default function GyroVisual() {
     // ?gputest=timer: frames driven by a timer instead of the screen. A hidden / background page
     // gets no animation frames, so this is how the GPU test can run where nobody is looking
     // (its frames-per-second column then says nothing; the GPU times are real).
-    const timerDriven = params.get('gputest') === 'timer'
+    const timerDriven = params.get('gputest') === 'timer' || params.get('frames') === 'timer'
+    // ?load=N (dev): every frame is drawn N times, a real GPU overload on demand, to see the
+    // quality picking react on a fast computer
+    const extraLoad = Math.min(Math.max(parseInt(params.get('load'), 10) || 1, 1), 40)
     const nextFrame = (fn) => (timerDriven ? setTimeout(() => fn(performance.now()), 16) : requestAnimationFrame(fn))
     const cancelFrame = (id) => (timerDriven ? clearTimeout(id) : cancelAnimationFrame(id))
     // Touch devices (phones, often 90-120 Hz screens) and the "lite" setup (lib/gyro/lite.js):
@@ -87,6 +94,39 @@ export default function GyroVisual() {
       const lite = liteMode()
       MIN_FRAME_MS = lite ? 1000 / 30 - 4 : 1000 / 60 - 6
       MAX_PIXEL_RATIO = lite ? 1.5 : 2
+    }
+
+    // The display's refresh interval, from animation frames themselves (they come at the
+    // display's rate, also while the 3D draws less often): the low end of the recent gaps, since
+    // a busy page or a busy GPU only makes them longer, and the lowest estimate so far for the
+    // same reason. Sampled from the moment the page mounts, before the 3D exists. Null until
+    // enough frames were seen (then 60 Hz is assumed).
+    let vsyncMs = null
+    let vsyncFrame = null
+    let vsyncLast = null
+    const vsyncGaps = []
+    const sampleVsync = (now) => {
+      vsyncFrame = requestAnimationFrame(sampleVsync)
+      if (vsyncLast != null) {
+        const gap = now - vsyncLast
+        if (gap > 3 && gap < 100) {
+          vsyncGaps.push(gap)
+          if (vsyncGaps.length > 90) vsyncGaps.shift()
+          if (vsyncGaps.length >= 12 && vsyncGaps.length % 6 === 0) {
+            const sorted = [...vsyncGaps].sort((a, b) => a - b)
+            const low = sorted[Math.floor(sorted.length * 0.2)]
+            vsyncMs = vsyncMs == null ? low : Math.min(vsyncMs, low)
+            canvas.dataset.vsync = vsyncMs.toFixed(1)
+          }
+        }
+      }
+      vsyncLast = now
+    }
+    vsyncFrame = requestAnimationFrame(sampleVsync)
+    // The interval between the 3D's own frames on this display: every k-th refresh (its cap)
+    const frameInterval = () => {
+      const refresh = vsyncMs || 1000 / 60
+      return Math.max(1, Math.ceil(MIN_FRAME_MS / refresh - 0.05)) * refresh
     }
 
     // Same signal the video used to send, so the Preloader can finish
@@ -164,23 +204,17 @@ export default function GyroVisual() {
           observer = new ResizeObserver(resize)
           observer.observe(box)
 
-          // Adaptive quality (quality.js, 6.8.16): starts at Q5, measures once the preloader is
-          // gone (begin(), below), then only steps down on sustained slowness. Off for frozen
-          // frames / the comparison tool (dev captures) / a forced ?q level / a rebuild.
+          // Adaptive quality (quality.js, 6.8.18): starts at the best level, a level is dropped
+          // only on sustained overload. Off for frozen frames / the comparison tool (dev
+          // captures) / a forced ?q level / a rebuild.
           const quality = createQualityController({
             gyro,
             setResolution: (value) => {
               resolution = value
               resize()
             },
-            onSettled: () => {
-              const base = quality.getBaseFps()
-              if (base != null) canvas.dataset.fps3d = String(base) // frames a second at Q5, after the preloader
-              canvas.dataset.fpsLog = quality.getFps().join(' ') // "level:fps" per counted window
-              if (params.has('gui')) {
-                console.info(`[GyroVisual] quality level ${quality.getLevel()} (level:fps tried: ${quality.getFps().join(', ')})`)
-              }
-            },
+            timerSupported: timer.supported,
+            frameMs: frameInterval,
             onLite: (fps) => switchToLite(fps),
             forcedLevel: keptLevel != null ? keptLevel : gpuTestModule ? 1 : Number.isFinite(forcedParam) ? forcedParam : null,
             adapt: keptLevel == null && !gpuTestModule && !Number.isFinite(frozen) && !params.has('ref')
@@ -225,6 +259,8 @@ export default function GyroVisual() {
             })
           }
           const gpuRecent = []
+          let shownAt = 0
+          let loggedCount = 0
           let gpuShownAt = 0
           let gpuLevel = ''
 
@@ -242,8 +278,11 @@ export default function GyroVisual() {
             // the level is picked later, once the preloader is gone (6.8.16)
             if (renders === 3) {
               canvas.classList.add('is-ready')
-              if (!gpuTest) sendReady()
+              shownAt = now
             }
+            // The Preloader is released once the quality has its first verdict (browsers
+            // without the GPU timer: at once), at the latest REVEAL_MAX_MS after the first frames
+            if (!gpuTest && !readySent && renders >= 3 && (quality.isReadyToShow() || now - shownAt > REVEAL_MAX_MS)) sendReady()
             // ?gputest keeps the preloader up until its "while loading" round is measured
             if (gpuTest && !readySent && gpuTest.loadDone()) sendReady()
             let seconds = (now - clockBegin) / 1000
@@ -262,6 +301,7 @@ export default function GyroVisual() {
               gpuRecent.push(finished[i].ms)
               if (gpuRecent.length > GPU_WINDOW) gpuRecent.shift()
               if (gpuTest) gpuTest.sample(finished[i])
+              else quality.gpu(finished[i])
             }
             if (gpuTest) {
               // the test's "stress" round: the page itself is made slow on purpose
@@ -273,12 +313,16 @@ export default function GyroVisual() {
             }
             // ?gputest "burst" rounds draw the same frame several times to load the GPU fully
             const draws = gpuTest ? gpuTest.repeat() : 1
-            const tag = gpuTest ? gpuTest.tag() : null
+            const tag = gpuTest ? gpuTest.tag() : quality.tag()
             for (let d = 0; d < draws; d += 1) {
               timer.begin(tag)
-              gyro.render(seconds, spin)
+              // ?load=N: N draws inside one timing = one N times heavier frame
+              for (let n = 0; n < extraLoad; n += 1) gyro.render(seconds, spin)
               timer.end()
             }
+            // Timer-driven frames do not wait for the screen: wait for the GPU instead, so an
+            // overloaded GPU makes frames late here too (dev only)
+            if (timerDriven && !gpuTest) gyro.finish()
             quality.frame(now)
             if (gpuTest) gpuTest.frame(now)
             // Readable from the element inspector (also on phones): level, start-up timings and
@@ -299,12 +343,19 @@ export default function GyroVisual() {
               canvas.dataset.quality = label
               canvas.dataset.levels = `${canvas.dataset.levels ? `${canvas.dataset.levels} ` : ''}${label}@${Math.round(now)}`
             }
-            // Frames a second over the last counted second, once settled (6.8.16: fps, not ms)
+            // Last judged window (GPU ms of the faster frames, or frames a second without the timer),
+            // how it is judged (gpu / fps / fixed), where the picking is, and what it decided
             const watched = quality.getWatched()
             if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
-            // Diagnostics (6.8.16): where the quality picking is (wait / base / verify / settled / fixed)
             const phaseNow = quality.getPhase()
             if (canvas.dataset.qPhase !== phaseNow) canvas.dataset.qPhase = phaseNow
+            const modeNow = quality.getMode()
+            if (canvas.dataset.qMode !== modeNow) canvas.dataset.qMode = modeNow
+            const decided = quality.getLog()
+            if (decided.length !== loggedCount) {
+              loggedCount = decided.length
+              canvas.dataset.fpsLog = logBefore + decided.join(' ')
+            }
           }
 
           // Showreel open (6.8.12): while the black showreel overlay covers the whole page
@@ -358,6 +409,8 @@ export default function GyroVisual() {
     const switchToLite = (fps) => {
       if (disposed || liteMode()) return
       canvas.dataset.lite = `auto ${Math.round(fps)} fps @${Math.round(performance.now())}`
+      // keep what was decided so far in the readout (the rebuilt scene starts a new log)
+      if (gyro && gyro.quality) logBefore = `${gyro.quality.getLog().join(' ')} | `
       setLiteMode(true)
       setTimeout(() => {
         if (disposed) return
@@ -406,6 +459,7 @@ export default function GyroVisual() {
 
     return () => {
       disposed = true
+      if (vsyncFrame != null) cancelAnimationFrame(vsyncFrame)
       if (liteTimer != null) clearTimeout(liteTimer)
       document.removeEventListener('visibilitychange', onVisibility)
       canvas.removeEventListener('webglcontextlost', handleContextLost)
