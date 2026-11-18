@@ -147,6 +147,9 @@ a {
 
 /* Typography classes (as requested) */
 .title{
+  /* not selectable (6.8.19): dragging over the hero must not highlight the name */
+  -webkit-user-select:none;
+  user-select:none;
   font-family: 'Manrope', sans-serif;
   font-weight:200; /* extra light */
   /* font-size is measured in JS (pages/index.js) so the title fills the
@@ -173,6 +176,9 @@ a {
 
 /* Rotating skills line under the title */
 .animated-information{
+  /* not selectable (6.8.19): dragging over the hero must not highlight the text */
+  -webkit-user-select:none;
+  user-select:none;
   margin: 89px 34px 8px;
   height: 4.2em; /* fixed height prevents layout jumps between lines */
   font-size: 34px;
