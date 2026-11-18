@@ -11,6 +11,7 @@ import { liteMode, setLiteMode, liteOnComputer } from '../lib/gyro/lite'
 // ?litetest switches to it anyway, shortly after the measuring starts (to see the switch).
 const LITE_SETTLE_MS = 0 // after the preloader is gone, before measuring (owner, 2026-11-18: right away)
 const BEGIN_RETRY_MS = 500 // page hidden / showreel open when measuring should start: try again
+const PRELOADER_FADE_MS = 240 // the preloader fade-out (220 ms in globals.css) + a frame
 const LITE_TEST_MS = 1500
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
@@ -269,9 +270,10 @@ export default function GyroVisual() {
       }, 0)
     }
 
-    // Quality is picked once the preloader is completely gone: <html>.preloader-active is removed
-    // when the Preloader unmounts, 0.9 s after loading ends (its fade-out ends at ~0.4 s), then
-    // LITE_SETTLE_MS more. A hidden tab or the showreel restarts the measuring window.
+    // Quality is picked as soon as the preloader has faded out: its root gets .preloader--done
+    // 0.18 s after loading ends and fades for 0.22 s (PRELOADER_FADE_MS); it is unmounted (and
+    // <html>.preloader-active removed) only at 0.9 s, which waited half a second too long
+    // (owner, 2026-11-18). A hidden tab or the showreel restarts the measuring window.
     const onVisibility = () => {
       interruptions += 1
       if (gyro && gyro.quality) gyro.quality.interrupt()
@@ -290,12 +292,14 @@ export default function GyroVisual() {
     const waitForPreloader = () => {
       liteTimer = null
       if (disposed) return
-      if (root.classList.contains('preloader-active')) {
-        liteTimer = setTimeout(waitForPreloader, 250)
+      const gone = !root.classList.contains('preloader-active')
+      const fading = !gone && document.querySelector('.preloader-root.preloader--done')
+      if (!gone && !fading) {
+        liteTimer = setTimeout(waitForPreloader, 50)
         return
       }
       canvas.dataset.qPre = String(Math.round(performance.now())) // diagnostics (6.8.16)
-      liteTimer = setTimeout(beginQuality, LITE_SETTLE_MS)
+      liteTimer = setTimeout(beginQuality, fading ? PRELOADER_FADE_MS : LITE_SETTLE_MS)
     }
     document.addEventListener('visibilitychange', onVisibility)
     waitForPreloader()
