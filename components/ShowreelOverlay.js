@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
-import { track, addShowreelWatched, hasConsent } from '../lib/analytics'
+import { track, addShowreelWatched, vimeoStatsAllowed } from '../lib/analytics'
 
 // Vimeo is contacted only once the showreel is opened. Without "Accept" the player URL has
 // dnt=1 ("do not track"): Vimeo sets no cookies AND counts no play in its statistics (measured
@@ -47,8 +47,9 @@ export default function ShowreelOverlay({ onClose }) {
   const closingRef = useRef(false)
   const iframeRef = useRef(null)
   const coverRef = useRef(null)
-  // Decided once per opening (the overlay only exists in the browser, after a click)
-  const [vimeoStats] = useState(() => hasConsent())
+  // Decided once per opening (the overlay only exists in the browser, after a click):
+  // "Accept" given and not the owner's own browser (?notrack)
+  const [vimeoStats] = useState(() => vimeoStatsAllowed())
   const [videoScale, setVideoScale] = useState(100)
   const videoScaleRef = useRef(100)
   videoScaleRef.current = videoScale

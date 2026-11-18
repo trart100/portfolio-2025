@@ -23,6 +23,8 @@ Od 6.8.11 obowiązuje zasada: **wszystko pełne dopiero po „Accept”**.
 
    `?track` zdejmuje znacznik `?notrack`. Jeśli nie chcesz, żeby Twoje zwykłe wizyty się liczyły, otwórz po testach stronę raz z `?notrack`.
 
+   Od 6.8.12 `?notrack` wyłącza w tej przeglądarce **także liczenie w Vimeo**, nawet po „Accept”. Test, który ma się liczyć, zawsze otwieraj z `?track`.
+
 ## 3. Scenariusz (jeden przebieg)
 
 1. Otwórz adres testowy.

@@ -31,7 +31,8 @@ chunk). PostHog EU cloud, no cookies and nothing stored on the device: page view
 clicks (autocapture) and country / city (from the IP address, on PostHog's side).
 Not tracked: localhost and Vercel previews (add `?track` to test there), visits with dev flags
 (`?gui`, `?ref`, `?tune`, `?t`, `?q`, `?fx`, `?ca`), and your own browser after one visit with
-`?notrack` (`?track` undoes it). In the console, `window.__analytics` says whether this visit is
+`?notrack` (`?track` undoes it); since 6.8.12 that mark also keeps your showreel plays out of
+Vimeo's statistics. In the console, `window.__analytics` says whether this visit is
 tracked and why not. Custom events go through `track(name, props)`; the list of events (menu,
 showreel progress via Vimeo's postMessage API, sections, scroll depth, contact clicks, clicks on
 the 3D, the 3D quality level per device, a visit summary on page leave) is at the top of
