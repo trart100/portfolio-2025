@@ -113,4 +113,7 @@ Zdarzenia sprzed kliknięcia Accept w Brave przepadają. To jest oczekiwane, bo 
 | 18.11, lokalnie | t1118-brave-acc (bez znacznika*) | Brave, okno prywatne | B | ✅ **wszystkie** zdarzenia przez `/akx` (wcześniej Brave wysyłał tylko `$pageview`), `vimeo_stats = true` | brak (localhost) | ✅ 2 min, 16 kliknięć | **do sprawdzenia**: czy Vimeo pokazuje 3. wyświetlenie z 18.11 | |
 | | | | | | | | | |
 
+| 18.11, **na żywo** (6.8.11) | t1118-live-pane-none | wbudowana (Chromium) | A (krótko) | ✅ wszystkie zdarzenia, `via = direct` | PL, Gdańsk | nie dotyczy | nie powinno liczyć | |
+| 18.11, **na żywo** (6.8.11) | t1118-live-pane-acc | wbudowana (Chromium) | B (krótko) | ✅ zdarzenia przez `/akx`, `vimeo_stats = true` | ✅ **PL, Gdańsk także przez `/akx`**, czyli adres IP przechodzi poprawnie | nagrywanie włączone | do sprawdzenia w Vimeo | |
+
 \* Adres skopiowany razem z kropką kończącą zdanie (`...brave-acc.`), więc znacznik się nie zapisał. Przebiegi znalezione po przeglądarce i sesji. Od tej poprawki kropka i inne znaki po ID są ignorowane.
