@@ -29,7 +29,7 @@ const PROGRESS_STEPS = [25, 50, 75, 95]
 const PLAY_RETRY_MS = 600 // ask again once if Vimeo has not started yet
 const FIRST_FRAME_S = 0.05 // playback time that counts as "frames are running" (statistics)
 const READY_FALLBACK_MS = 800 // iframe loaded but no 'ready' message: treat it as ready
-const VIDEO_FADE_IN = 0.3 // s, the black cover fading off the player
+const VIDEO_FADE_IN = 0.25 // s, the black cover fading off the player (same as OPEN_FADE, 6.8.13)
 // Close: video to black (cover), frame hidden, then the black overlay fades to the page
 const CLOSE_VIDEO_OUT = 0.18 // s
 const CLOSE_OVERLAY_OUT = 0.25 // s
