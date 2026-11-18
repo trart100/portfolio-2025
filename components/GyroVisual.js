@@ -9,7 +9,7 @@ import { liteMode, setLiteMode, liteOnComputer } from '../lib/gyro/lite'
 // level draws fewer than 30 frames a second, quality.js calls onLite and the scene is rebuilt
 // with the phone setup ("lite", lib/gyro/lite.js, shown as Q6) for the rest of the visit.
 // ?litetest switches to it anyway, shortly after the measuring starts (to see the switch).
-const LITE_SETTLE_MS = 500 // after the preloader is gone, before measuring
+const LITE_SETTLE_MS = 1000 // after the preloader is gone, before measuring (0.5 s was still busy)
 const LITE_TEST_MS = 1500
 
 const GyroReference = dynamic(() => import('./GyroReference'), { ssr: false })
@@ -207,6 +207,9 @@ export default function GyroVisual() {
             // Watch median of timed frames (ms), > 20 = step down
             const watched = quality.getWatched()
             if (watched && canvas.dataset.watch !== watched) canvas.dataset.watch = watched
+            // Diagnostics (6.8.16): where the quality picking is (wait / base / verify / settled / fixed)
+            const phaseNow = quality.getPhase()
+            if (canvas.dataset.qPhase !== phaseNow) canvas.dataset.qPhase = phaseNow
           }
 
           // Showreel open (6.8.12): while the black showreel overlay covers the whole page
@@ -283,6 +286,7 @@ export default function GyroVisual() {
         return
       }
       gyro.quality.begin()
+      canvas.dataset.qBegin = String(Math.round(performance.now())) // diagnostics (6.8.16)
       if (params.has('litetest')) liteTimer = setTimeout(() => switchToLite(0), LITE_TEST_MS)
     }
     const waitForPreloader = () => {
@@ -292,6 +296,7 @@ export default function GyroVisual() {
         liteTimer = setTimeout(waitForPreloader, 250)
         return
       }
+      canvas.dataset.qPre = String(Math.round(performance.now())) // diagnostics (6.8.16)
       liteTimer = setTimeout(beginQuality, LITE_SETTLE_MS)
     }
     document.addEventListener('visibilitychange', onVisibility)
